@@ -51,8 +51,21 @@ def test_package_has_no_undocumented_modules():
     assert actual == ["core", "ingest", "models", "retrieve", "server", "services", "store"]
 
 
-def test_server_main_placeholder_raises_not_implemented():
-    from scholar_rag.server import main
+def test_server_registers_eleven_tools():
+    from scholar_rag.server import tools
 
-    with pytest.raises(NotImplementedError):
-        main.main()
+    assert list(tools.TOOL_NAMES) == [
+        "search_chunks",
+        "search_documents",
+        "list_documents",
+        "get_document",
+        "get_document_text",
+        "add_document",
+        "remove_document",
+        "create_kb",
+        "delete_kb",
+        "list_kbs",
+        "get_job",
+    ]
+    for tool_name in tools.TOOL_NAMES:
+        assert callable(getattr(tools, f"tool_{tool_name}"))

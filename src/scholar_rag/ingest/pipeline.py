@@ -76,9 +76,14 @@ def _persist_disk(
     staged.path.unlink()
     (work_dir / "full_text.md").write_text(cleaned, encoding="utf-8")
     sections = [list(pair) for pair in annotated.sections]
+    section_texts: dict[str, str] = {name: "" for name, _count in annotated.sections}
+    for block in annotated.blocks:
+        if not block.is_heading:
+            section_texts[block.section] += block.text
     payload = {
         "sections": sections,
         "total_chars": sum(count for _name, count in annotated.sections),
+        "section_texts": section_texts,
     }
     (work_dir / "sections.json").write_text(
         json.dumps(payload, ensure_ascii=False), encoding="utf-8"

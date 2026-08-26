@@ -238,7 +238,21 @@ def test_disk_files_written_atomically(harness, tmp_path):
     sections = __import__("json").loads((doc_dir / "sections.json").read_text(encoding="utf-8"))
     assert isinstance(sections["sections"], list)
     assert sections["total_chars"] >= 0
+    assert isinstance(sections["section_texts"], dict)
     assert not [p for p in doc_dir.parent.iterdir() if p.name.startswith(".ingest-")]
+
+
+def test_sections_json_section_texts_match_outline_counts(harness, tmp_path):
+    pdf = _pdf(tmp_path)
+    outcome = pipeline_module.ingest_document(pdf, "kbtest", pipeline_module.ChunkConfig())
+    doc_dir = tmp_path / "data" / "kbs" / "kbtest" / "documents" / outcome["doc_id"]
+    sections = __import__("json").loads((doc_dir / "sections.json").read_text(encoding="utf-8"))
+    names = [pair[0] for pair in sections["sections"]]
+    counts = {pair[0]: int(pair[1]) for pair in sections["sections"]}
+    assert set(sections["section_texts"]) == set(names)
+    for name in names:
+        assert len(sections["section_texts"][name]) == counts[name]
+    assert sum(len(text) for text in sections["section_texts"].values()) == sections["total_chars"]
 
 
 def test_catalog_persist_failure_cleans_qdrant_points(harness, tmp_path, monkeypatch):
