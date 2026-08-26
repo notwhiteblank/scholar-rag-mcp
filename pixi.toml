@@ -12,7 +12,7 @@ scholar-rag-mcp = { path = ".", editable = true }
 pydantic = ">=2"
 pydantic-settings = "*"
 httpx = "*"
-openai = ">=1.40"
+openai = ">=1.40,<3"
 qdrant-client = ">=1.19,<1.20"
 mcp = ">=1.0"
 fpdf2 = "*"
