@@ -1,0 +1,188 @@
+{
+  "blocks": [
+    {
+      "text": "Improved Crop Yield Forecasting with Multi-Sensor Time Series",
+      "is_heading": true,
+      "heading_level": 1,
+      "section": "Other",
+      "confidence": 0.92
+    },
+    {
+      "text": "Abstract",
+      "is_heading": true,
+      "heading_level": 2,
+      "section": "Abstract",
+      "confidence": 0.95
+    },
+    {
+      "text": "Accurate crop yield prediction is essential for food security planning and agricultural policy. We present a forecasting pipeline that fuses satellite vegetation indices with local weather records. On a multi-year benchmark the proposed model reduces mean absolute error by 18 percent relative to a strong baseline while remaining interpretable.",
+      "is_heading": false,
+      "heading_level": 0,
+      "section": "Abstract",
+      "confidence": 0.88
+    },
+    {
+      "text": "Introduction",
+      "is_heading": true,
+      "heading_level": 2,
+      "section": "Introduction",
+      "confidence": 0.95
+    },
+    {
+      "text": "In this work we study whether geographic and seasonal variation can be handled by a single unified model. Our results indicate that careful alignment of weather and image features matters more than model complexity.",
+      "is_heading": false,
+      "heading_level": 0,
+      "section": "Introduction",
+      "confidence": 0.88
+    },
+    {
+      "text": "Contributions",
+      "is_heading": true,
+      "heading_level": 3,
+      "section": "Introduction",
+      "confidence": 0.62
+    },
+    {
+      "text": "We release an open preprocessing toolkit and report ablations on three public datasets. The main contribution is a normalization scheme that stabilizes training across regions.",
+      "is_heading": false,
+      "heading_level": 0,
+      "section": "Introduction",
+      "confidence": 0.88
+    },
+    {
+      "text": "Results",
+      "is_heading": true,
+      "heading_level": 2,
+      "section": "Results",
+      "confidence": 0.95
+    },
+    {
+      "text": "Comparison with Baselines",
+      "is_heading": true,
+      "heading_level": 3,
+      "section": "Results",
+      "confidence": 0.62
+    },
+    {
+      "text": "When measured against ridge regression and gradient boosting, the fusion model wins in eight out of nine experimental cells. The remaining cell is tied within one standard error.",
+      "is_heading": false,
+      "heading_level": 0,
+      "section": "Results",
+      "confidence": 0.88
+    },
+    {
+      "text": "Seasonal Robustness",
+      "is_heading": true,
+      "heading_level": 3,
+      "section": "Results",
+      "confidence": 0.62
+    },
+    {
+      "text": "Splitting the test period by growing season shows no performance cliff on dry years. This suggests the weather normalization absorbs most environmental drift.",
+      "is_heading": false,
+      "heading_level": 0,
+      "section": "Results",
+      "confidence": 0.88
+    },
+    {
+      "text": "Discussion",
+      "is_heading": true,
+      "heading_level": 2,
+      "section": "Discussion",
+      "confidence": 0.95
+    },
+    {
+      "text": "Our findings demonstrate that multi-sensor fusion is a practical route to robust forecasts. The failure of the strong baseline in early season is consistent with its limited view of soil moisture dynamics.",
+      "is_heading": false,
+      "heading_level": 0,
+      "section": "Discussion",
+      "confidence": 0.88
+    },
+    {
+      "text": "We anticipate that extending the pipeline to include economic indicators will further close the gap between forecasts and administrative decisions.",
+      "is_heading": false,
+      "heading_level": 0,
+      "section": "Discussion",
+      "confidence": 0.88
+    },
+    {
+      "text": "Methods",
+      "is_heading": true,
+      "heading_level": 2,
+      "section": "Methods",
+      "confidence": 0.95
+    },
+    {
+      "text": "We used publicly available satellite imagery resampled to a uniform grid. Weather variables were sourced from a global reanalysis product and interpolated to station locations.",
+      "is_heading": false,
+      "heading_level": 0,
+      "section": "Methods",
+      "confidence": 0.88
+    },
+    {
+      "text": "Model Architecture",
+      "is_heading": true,
+      "heading_level": 3,
+      "section": "Discussion",
+      "confidence": 0.62
+    },
+    {
+      "text": "The model combines a two-layer temporal encoder with a lightweight attention module. All layers were trained with standard gradient descent and early stopping on a validation fold.",
+      "is_heading": false,
+      "heading_level": 0,
+      "section": "Discussion",
+      "confidence": 0.88
+    },
+    {
+      "text": "Evaluation Protocol",
+      "is_heading": true,
+      "heading_level": 3,
+      "section": "Methods",
+      "confidence": 0.62
+    },
+    {
+      "text": "We performed five-fold cross-validation stratified by region. Metrics are reported as mean absolute error in tonnes per hectare together with the standard deviation over folds.",
+      "is_heading": false,
+      "heading_level": 0,
+      "section": "Methods",
+      "confidence": 0.88
+    },
+    {
+      "text": "References",
+      "is_heading": true,
+      "heading_level": 2,
+      "section": "References",
+      "confidence": 0.95
+    }
+  ],
+  "sections": [
+    [
+      "Other",
+      0
+    ],
+    [
+      "Abstract",
+      345
+    ],
+    [
+      "Introduction",
+      391
+    ],
+    [
+      "Results",
+      336
+    ],
+    [
+      "Discussion",
+      532
+    ],
+    [
+      "Methods",
+      352
+    ],
+    [
+      "References",
+      0
+    ]
+  ]
+}

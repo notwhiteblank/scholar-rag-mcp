@@ -1,0 +1,152 @@
+{
+  "blocks": [
+    {
+      "text": "Graph Neural Networks for Wireless Network Routing: A Review",
+      "is_heading": true,
+      "heading_level": 1,
+      "section": "Other",
+      "confidence": 0.92
+    },
+    {
+      "text": "Summary",
+      "is_heading": true,
+      "heading_level": 2,
+      "section": "Abstract",
+      "confidence": 0.9
+    },
+    {
+      "text": "Graph neural networks offer a unified way to model communication networks whose topology changes over time. This review covers the design space, highlights open evaluation gaps, and sketches directions for future work. We survey more than sixty papers published between 2018 and 2025.",
+      "is_heading": false,
+      "heading_level": 0,
+      "section": "Abstract",
+      "confidence": 0.88
+    },
+    {
+      "text": "Background",
+      "is_heading": true,
+      "heading_level": 2,
+      "section": "Introduction",
+      "confidence": 0.95
+    },
+    {
+      "text": "Classical routing protocols react to congestion with hand-tuned heuristics. As network topologies become denser, learning-based policies trained on simulated environments gain attention because they can adapt to traffic without explicit modeling.",
+      "is_heading": false,
+      "heading_level": 0,
+      "section": "Introduction",
+      "confidence": 0.88
+    },
+    {
+      "text": "Message Passing Schemes",
+      "is_heading": true,
+      "heading_level": 3,
+      "section": "Introduction",
+      "confidence": 0.78
+    },
+    {
+      "text": "Most proposals cast the network as a graph whose edges carry delay and capacity. Message passing over this graph lets a policy combine local congestion signals into globally sensible forwarding decisions.",
+      "is_heading": false,
+      "heading_level": 0,
+      "section": "Introduction",
+      "confidence": 0.88
+    },
+    {
+      "text": "Training Regimes",
+      "is_heading": true,
+      "heading_level": 3,
+      "section": "Introduction",
+      "confidence": 0.78
+    },
+    {
+      "text": "A recurring distinction is between supervised imitation of expert routes and pure reinforcement learning. The two regimes differ sharply in sample efficiency and in the stability of the learned policy under distribution shift.",
+      "is_heading": false,
+      "heading_level": 0,
+      "section": "Introduction",
+      "confidence": 0.88
+    },
+    {
+      "text": "Open Challenges",
+      "is_heading": true,
+      "heading_level": 2,
+      "section": "Introduction",
+      "confidence": 0.78
+    },
+    {
+      "text": "Evaluation remains fragmented: few studies share a common simulator, traffic model, or metric definition. This makes head-to-head comparison difficult and slows adoption in operational settings.",
+      "is_heading": false,
+      "heading_level": 0,
+      "section": "Introduction",
+      "confidence": 0.88
+    },
+    {
+      "text": "Scalability",
+      "is_heading": true,
+      "heading_level": 3,
+      "section": "Introduction",
+      "confidence": 0.78
+    },
+    {
+      "text": "Graph policies trained on small topologies often fail to transfer to larger or denser networks. Scaling laws for such policies are largely unexplored.",
+      "is_heading": false,
+      "heading_level": 0,
+      "section": "Introduction",
+      "confidence": 0.88
+    },
+    {
+      "text": "Robustness",
+      "is_heading": true,
+      "heading_level": 3,
+      "section": "Introduction",
+      "confidence": 0.78
+    },
+    {
+      "text": "We found that small perturbations of link weights can flip routing decisions. Robustness against measurement noise should therefore become a standard evaluation axis.",
+      "is_heading": false,
+      "heading_level": 0,
+      "section": "Introduction",
+      "confidence": 0.88
+    },
+    {
+      "text": "Conclusion",
+      "is_heading": true,
+      "heading_level": 2,
+      "section": "Conclusion",
+      "confidence": 0.95
+    },
+    {
+      "text": "We summarize the emerging consensus that graph-based routing is promising but its evaluation science lags behind algorithm design. We propose a shared benchmark and a robustness checklist for future studies.",
+      "is_heading": false,
+      "heading_level": 0,
+      "section": "Conclusion",
+      "confidence": 0.88
+    },
+    {
+      "text": "Bibliography",
+      "is_heading": true,
+      "heading_level": 2,
+      "section": "References",
+      "confidence": 0.95
+    }
+  ],
+  "sections": [
+    [
+      "Other",
+      0
+    ],
+    [
+      "Abstract",
+      284
+    ],
+    [
+      "Introduction",
+      1186
+    ],
+    [
+      "Conclusion",
+      207
+    ],
+    [
+      "References",
+      0
+    ]
+  ]
+}

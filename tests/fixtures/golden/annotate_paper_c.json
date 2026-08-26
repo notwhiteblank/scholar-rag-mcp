@@ -1,0 +1,163 @@
+{
+  "blocks": [
+    {
+      "text": "Prompt Ensembles Improve Few-Shot Text Classification Accuracy",
+      "is_heading": true,
+      "heading_level": 1,
+      "section": "Other",
+      "confidence": 0.92
+    },
+    {
+      "text": "C. Inventor and D. Builder",
+      "is_heading": false,
+      "heading_level": 0,
+      "section": "Other",
+      "confidence": 0.6
+    },
+    {
+      "text": "Abstract",
+      "is_heading": true,
+      "heading_level": 2,
+      "section": "Abstract",
+      "confidence": 0.95
+    },
+    {
+      "text": "Few-shot text classification is sensitive to the wording of prompts. We show that averaging predictions over a small ensemble of manually written prompts yields consistent gains while costing only a linear increase in inference time.",
+      "is_heading": false,
+      "heading_level": 0,
+      "section": "Abstract",
+      "confidence": 0.88
+    },
+    {
+      "text": "1. Introduction",
+      "is_heading": true,
+      "heading_level": 2,
+      "section": "Introduction",
+      "confidence": 0.62
+    },
+    {
+      "text": "We investigated whether ensembles of plausible prompts can reduce this brittleness without any additional training data.",
+      "is_heading": false,
+      "heading_level": 0,
+      "section": "Introduction",
+      "confidence": 0.88
+    },
+    {
+      "text": "2. Approach",
+      "is_heading": true,
+      "heading_level": 2,
+      "section": "Introduction",
+      "confidence": 0.62
+    },
+    {
+      "text": "For every example we generate one score vector per prompt and average the vectors before applying the decision threshold. No model weights are updated during the entire process.",
+      "is_heading": false,
+      "heading_level": 0,
+      "section": "Introduction",
+      "confidence": 0.88
+    },
+    {
+      "text": "Prompt Selection",
+      "is_heading": true,
+      "heading_level": 3,
+      "section": "Introduction",
+      "confidence": 0.62
+    },
+    {
+      "text": "Prompts were written independently by three analysts following a short style guide. The guide constrained prompt length and forbade mention of the test labels.",
+      "is_heading": false,
+      "heading_level": 0,
+      "section": "Introduction",
+      "confidence": 0.88
+    },
+    {
+      "text": "Aggregation",
+      "is_heading": true,
+      "heading_level": 3,
+      "section": "Introduction",
+      "confidence": 0.62
+    },
+    {
+      "text": "We experimented with arithmetic and geometric averaging and found the two almost indistinguishable on the development set.",
+      "is_heading": false,
+      "heading_level": 0,
+      "section": "Introduction",
+      "confidence": 0.88
+    },
+    {
+      "text": "3. Experiments",
+      "is_heading": true,
+      "heading_level": 2,
+      "section": "Introduction",
+      "confidence": 0.62
+    },
+    {
+      "text": "On six public benchmarks the ensemble improves mean accuracy by 4.1 points in the eight-shot setting. The gain is largest for tasks with high label ambiguity.",
+      "is_heading": false,
+      "heading_level": 0,
+      "section": "Introduction",
+      "confidence": 0.88
+    },
+    {
+      "text": "4. Discussion",
+      "is_heading": true,
+      "heading_level": 2,
+      "section": "Discussion",
+      "confidence": 0.62
+    },
+    {
+      "text": "We interpret the gain as variance reduction: single prompts act as strong prior views, and averaging stabilizes the decision boundary. Future work should study adaptive ensembles whose members are pruned per task.",
+      "is_heading": false,
+      "heading_level": 0,
+      "section": "Discussion",
+      "confidence": 0.88
+    },
+    {
+      "text": "5. Conclusion",
+      "is_heading": true,
+      "heading_level": 2,
+      "section": "Conclusion",
+      "confidence": 0.62
+    },
+    {
+      "text": "Prompt ensembles are a simple, training-free remedy for prompt brittleness. We recommend them as a default reporting practice in few-shot research.",
+      "is_heading": false,
+      "heading_level": 0,
+      "section": "Conclusion",
+      "confidence": 0.88
+    },
+    {
+      "text": "References",
+      "is_heading": true,
+      "heading_level": 2,
+      "section": "References",
+      "confidence": 0.95
+    }
+  ],
+  "sections": [
+    [
+      "Other",
+      26
+    ],
+    [
+      "Abstract",
+      233
+    ],
+    [
+      "Introduction",
+      736
+    ],
+    [
+      "Discussion",
+      213
+    ],
+    [
+      "Conclusion",
+      147
+    ],
+    [
+      "References",
+      0
+    ]
+  ]
+}
