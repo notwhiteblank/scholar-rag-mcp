@@ -92,6 +92,7 @@ async def test_stdio_server_initialize_list_tools_and_list_kbs(
                 {
                     "name": "smoke",
                     "doc_count": 0,
+                    "chunk_count": 0,
                     "created_at": "2024-05-01T00:00:00Z",
                     "status": "ready",
                 }

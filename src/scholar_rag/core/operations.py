@@ -218,7 +218,17 @@ class Operations:
             self._tokens.pop(kb, None)
 
     def list_kbs(self) -> list[dict]:  # type: ignore[type-arg]
-        return self._registry.list_kbs()
+        entries = self._registry.list_kbs()
+        result: list[dict] = []  # type: ignore[type-arg]
+        for entry in entries:
+            chunk_count = 0
+            if entry.get("status") == "ready":
+                try:
+                    chunk_count = VectorStore.open(str(entry["name"])).count()
+                except Exception:
+                    chunk_count = 0
+            result.append({**entry, "chunk_count": chunk_count})
+        return result
 
     def get_job(self, job_id) -> JobRecord:  # type: ignore[no-untyped-def]
         return self._jobs.get(job_id)

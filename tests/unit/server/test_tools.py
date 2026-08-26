@@ -235,6 +235,20 @@ def test_list_kbs_roundtrip(env, ops):
     assert entries[0]["doc_count"] == 1
     assert entries[0]["status"] == "ready"
     assert entries[0]["created_at"] == "2024-01-01T00:00:00Z"
+    assert entries[0]["chunk_count"] == 7
+
+
+def test_list_kbs_broken_kb_reports_zero_chunks(env, ops):
+    kb = _kb_name()
+    (env / "data" / "kbs" / kb).mkdir(parents=True)
+    (env / "data" / "kbs" / kb / "kb_meta.json").write_text(
+        "{not valid json", encoding="utf-8"
+    )
+    result = tools_module.dispatch_tool("list_kbs", {})
+    entries = result["kbs"]
+    assert [entry["name"] for entry in entries] == [kb]
+    assert entries[0]["status"] == "broken"
+    assert entries[0]["chunk_count"] == 0
 
 
 def test_list_kbs_empty(env, ops):
