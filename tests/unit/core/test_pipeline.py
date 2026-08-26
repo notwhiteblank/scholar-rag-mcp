@@ -289,3 +289,21 @@ def test_skip_existing_returns_skipped_with_existing_doc_id(harness, tmp_path):
     assert FakeVectorStore.upsert_count == 1
     store = FakeVectorStore.registry["kbtest"]
     assert not [e for e in store.events if e[0] == "delete"]
+
+
+def test_skip_existing_cleans_up_staging_dir(harness, tmp_path):
+    pdf = _pdf(tmp_path)
+    first = pipeline_module.ingest_document(
+        pdf, "kbtest", pipeline_module.ChunkConfig(), skip_existing=True
+    )
+    second = pipeline_module.ingest_document(
+        pdf, "kbtest", pipeline_module.ChunkConfig(), skip_existing=True
+    )
+    assert first["skipped"] is False
+    assert second["skipped"] is True
+    assert second["doc_id"] == first["doc_id"]
+    assert second["title"] == first["title"]
+    documents_area = tmp_path / "data" / "kbs" / "kbtest" / "documents"
+    assert [p for p in documents_area.iterdir() if p.name.startswith(".ingest-")] == []
+    stored = documents_area / first["doc_id"]
+    assert len(list(stored.rglob("*.pdf"))) == 1

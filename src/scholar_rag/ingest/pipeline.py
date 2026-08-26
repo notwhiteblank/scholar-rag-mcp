@@ -142,5 +142,6 @@ def ingest_document(
     except Exception:
         if doc_id is not None:
             _cleanup_partial(kb, catalog, doc_id)
-        shutil.rmtree(work_dir, ignore_errors=True)
         raise
+    finally:
+        shutil.rmtree(work_dir, ignore_errors=True)
