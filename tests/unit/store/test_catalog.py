@@ -254,3 +254,15 @@ def test_search_pagination(catalog):
     assert len(page1) == 2
     total, page3 = catalog.search_documents(None, None, None, None, None, None, 3, 2)
     assert len(page3) == 1
+
+
+def test_search_malformed_fts_query_treated_as_no_fts_filter(catalog):
+    """A whitespace/quote-only FTS query is treated as an empty FTS filter."""
+    make_doc(catalog, "d1", "Attention", year=2021, content_hash="d1")
+    make_doc(catalog, "d2", "Models", year=2022, content_hash="d2")
+    for meaningless in ("   ", '""', '"'):
+        total, rows = catalog.search_documents(meaningless, None, None, None, None, None, 1, 10)
+        assert total == 2
+    total, rows = catalog.search_documents("   ", None, None, None, 2021, 2021, 1, 10)
+    assert total == 1
+    assert rows[0]["doc_id"] == "d1"

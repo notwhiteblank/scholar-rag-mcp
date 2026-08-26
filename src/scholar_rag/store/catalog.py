@@ -31,8 +31,9 @@ def _like_escape(value: str) -> str:
 
 
 def _fts_query(query: str) -> str:
-    tokens = query.split()
-    return " ".join('"' + token.replace('"', "") + '"' for token in tokens)
+    words = [token.replace('"', "") for token in query.split()]
+    words = [word for word in words if word]
+    return " ".join('"' + word + '"' for word in words)
 
 
 class Catalog:
@@ -138,8 +139,10 @@ class Catalog:
         conditions: list[str] = []
         params: list[object] = []
         if query:
-            conditions.append("d.doc_id IN (SELECT doc_id FROM documents_fts WHERE documents_fts MATCH ?)")
-            params.append(_fts_query(query))
+            fts_expr = _fts_query(query)
+            if fts_expr:
+                conditions.append("d.doc_id IN (SELECT doc_id FROM documents_fts WHERE documents_fts MATCH ?)")
+                params.append(fts_expr)
         if title:
             conditions.append("d.title LIKE ? ESCAPE '\\'")
             params.append(f"%{_like_escape(title)}%")

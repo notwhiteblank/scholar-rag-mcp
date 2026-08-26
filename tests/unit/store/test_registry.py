@@ -130,6 +130,14 @@ def test_list_kbs_marks_broken_kb(registry, tmp_path):
     assert kbs["broken"]["status"] == "broken"
 
 
+def test_list_kbs_marks_broken_kb_corrupt_catalog(registry):
+    registry.create_kb("alpha", _meta("alpha"))
+    (registry.kb_path("alpha") / "catalog.sqlite3").write_bytes(b"not a sqlite database")
+    kbs = {kb["name"]: kb for kb in registry.list_kbs()}
+    assert kbs["alpha"]["status"] == "broken"
+    assert kbs["alpha"]["doc_count"] == 0
+
+
 def test_get_kb_lock_returns_shared_lock_per_name(registry):
     assert registry.get_kb_lock("alpha") is registry.get_kb_lock("alpha")
     assert registry.get_kb_lock("alpha") is not registry.get_kb_lock("beta")

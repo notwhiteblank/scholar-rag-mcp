@@ -4,6 +4,7 @@ import json
 import os
 import re
 import shutil
+import sqlite3
 import tempfile
 import threading
 from pathlib import Path
@@ -48,7 +49,7 @@ class Registry:
                 "created_at": meta.get("created_at"),
                 "status": "ready",
             }
-        except (OSError, ValueError, json.JSONDecodeError):
+        except (OSError, ValueError, sqlite3.Error):
             return {**base, "doc_count": 0, "created_at": None, "status": "broken"}
 
     def create_kb(self, name: str, meta: dict) -> None:  # type: ignore[type-arg]
