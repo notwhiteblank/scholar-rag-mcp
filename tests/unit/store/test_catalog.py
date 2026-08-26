@@ -1,4 +1,5 @@
 import os
+import sqlite3
 
 import pytest
 
@@ -120,6 +121,42 @@ def test_count_documents(catalog):
     make_doc(catalog, "b", "B")
     make_doc(catalog, "c", "C")
     assert catalog.count_documents() == 3
+
+
+def test_find_by_hash_returns_matching_doc(catalog):
+    make_doc(catalog, "doc1", "Attention Networks", content_hash="abc123")
+    row = catalog.find_by_hash("abc123")
+    assert row is not None
+    assert row["doc_id"] == "doc1"
+    assert row["title"] == "Attention Networks"
+
+
+def test_find_by_hash_missing_returns_none(catalog):
+    make_doc(catalog, "doc1", "Attention Networks", content_hash="abc123")
+    assert catalog.find_by_hash("nope") is None
+
+
+def test_add_document_inserts_doc_and_chunks_atomically(catalog):
+    meta = make_meta("Attention Networks", authors=["A", "B"], year=2022, doi="10.1/2")
+    catalog.add_document(meta, "doc1", "/src/1.pdf", "abc123", ["c1", "c2"])
+    row = catalog.get_document("doc1")
+    assert row["doc_id"] == "doc1"
+    assert row["first_author"] == "A"
+    row2 = catalog.get_document("doc2")
+    assert row2 is None
+    with pytest.raises(sqlite3.IntegrityError):
+        catalog.upsert_document(meta, "doc2", "/src/2.pdf", "abc123")
+    catalog.delete_document("doc1")
+    assert catalog.find_by_hash("abc123") is None
+
+
+def test_add_document_chunks_match_point_ids(catalog):
+    meta = make_meta("Title", authors=["A"])
+    catalog.add_document(meta, "doc9", "/src/9.pdf", "hash9", ["point-0", "point-1"])
+    conn = sqlite3.connect(catalog._path)
+    rows = conn.execute("SELECT chunk_id FROM chunks WHERE doc_id = 'doc9' ORDER BY chunk_index").fetchall()
+    conn.close()
+    assert [r[0] for r in rows] == ["point-0", "point-1"]
 
 
 def test_insert_chunks_and_cascade_delete(catalog):

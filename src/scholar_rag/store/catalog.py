@@ -53,42 +53,59 @@ class Catalog:
             conn.execute(f"DELETE FROM {table} WHERE doc_id = ?", (doc_id,))
         conn.execute("DELETE FROM documents_fts WHERE doc_id = ?", (doc_id,))
 
+    def _upsert_rows(self, conn: sqlite3.Connection, meta: MetadataResult, doc_id: str, source_path: str, content_hash: str) -> None:
+        self._delete_rows(conn, doc_id)
+        conn.execute(
+            "INSERT INTO documents(doc_id, title, abstract, year, journal, doi, first_author,"
+            " author_count, source_path, content_hash, added_at, parse_status)"
+            " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            (
+                doc_id,
+                meta.title,
+                meta.abstract,
+                meta.year,
+                meta.journal,
+                meta.doi,
+                meta.authors[0] if meta.authors else "",
+                len(meta.authors),
+                source_path,
+                content_hash,
+                _now_iso(),
+                _PARSE_STATUS_DONE,
+            ),
+        )
+        conn.executemany(
+            "INSERT INTO document_authors(doc_id, position, name) VALUES (?, ?, ?)",
+            [(doc_id, position, name) for position, name in enumerate(meta.authors)],
+        )
+        conn.executemany(
+            "INSERT INTO document_keywords(doc_id, keyword) VALUES (?, ?)",
+            [(doc_id, keyword) for keyword in meta.keywords],
+        )
+        conn.execute(
+            "INSERT INTO documents_fts(doc_id, title, abstract, keywords) VALUES (?, ?, ?, ?)",
+            (doc_id, meta.title, meta.abstract or "", " ".join(meta.keywords)),
+        )
+
     def upsert_document(
         self, meta: MetadataResult, doc_id: str, source_path: str, content_hash: str
     ) -> None:
         with self._connect() as conn:
-            self._delete_rows(conn, doc_id)
-            conn.execute(
-                "INSERT INTO documents(doc_id, title, abstract, year, journal, doi, first_author,"
-                " author_count, source_path, content_hash, added_at, parse_status)"
-                " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                (
-                    doc_id,
-                    meta.title,
-                    meta.abstract,
-                    meta.year,
-                    meta.journal,
-                    meta.doi,
-                    meta.authors[0] if meta.authors else "",
-                    len(meta.authors),
-                    source_path,
-                    content_hash,
-                    _now_iso(),
-                    _PARSE_STATUS_DONE,
-                ),
-            )
-            conn.executemany(
-                "INSERT INTO document_authors(doc_id, position, name) VALUES (?, ?, ?)",
-                [(doc_id, position, name) for position, name in enumerate(meta.authors)],
-            )
-            conn.executemany(
-                "INSERT INTO document_keywords(doc_id, keyword) VALUES (?, ?)",
-                [(doc_id, keyword) for keyword in meta.keywords],
-            )
-            conn.execute(
-                "INSERT INTO documents_fts(doc_id, title, abstract, keywords) VALUES (?, ?, ?, ?)",
-                (doc_id, meta.title, meta.abstract or "", " ".join(meta.keywords)),
-            )
+            self._upsert_rows(conn, meta, doc_id, source_path, content_hash)
+
+    def add_document(
+        self, meta: MetadataResult, doc_id: str, source_path: str, content_hash: str, chunk_ids: list[str]
+    ) -> None:
+        with self._connect() as conn:
+            self._upsert_rows(conn, meta, doc_id, source_path, content_hash)
+            self._insert_chunk_rows(conn, doc_id, chunk_ids)
+
+    def find_by_hash(self, content_hash) -> dict | None:  # type: ignore[type-arg, no-untyped-def]
+        with self._connect() as conn:
+            row = conn.execute(
+                "SELECT * FROM documents WHERE content_hash = ?", (content_hash,)
+            ).fetchone()
+            return dict(row) if row is not None else None
 
     def get_document(self, doc_id) -> dict | None:  # type: ignore[type-arg, no-untyped-def]
         with self._connect() as conn:
@@ -173,12 +190,15 @@ class Catalog:
         return total, [dict(row) for row in rows]
 
     def insert_chunks(self, doc_id: str, chunk_ids: list[str]) -> None:
-        rows = [(chunk_id, doc_id, None, "") for chunk_id in chunk_ids]
         with self._connect() as conn:
-            conn.executemany(
-                "INSERT INTO chunks(chunk_id, doc_id, chunk_index, section) VALUES (?, ?, ?, ?)",
-                rows,
-            )
+            self._insert_chunk_rows(conn, doc_id, chunk_ids)
+
+    def _insert_chunk_rows(self, conn: sqlite3.Connection, doc_id: str, chunk_ids: list[str]) -> None:
+        rows = [(chunk_id, doc_id, None, "") for chunk_id in chunk_ids]
+        conn.executemany(
+            "INSERT INTO chunks(chunk_id, doc_id, chunk_index, section) VALUES (?, ?, ?, ?)",
+            rows,
+        )
 
     def delete_document(self, doc_id: str) -> None:
         with self._connect() as conn:

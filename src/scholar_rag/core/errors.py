@@ -13,6 +13,13 @@ class KbExistsError(ScholarRagError):
 class DocNotFoundError(ScholarRagError):
     code = "doc_not_found"
 
+class DocExistsError(ScholarRagError):
+    code = "doc_exists"
+
+    def __init__(self, doc_id: str, message: str | None = None) -> None:
+        super().__init__(message or f"document already exists: {doc_id}")
+        self.doc_id = doc_id
+
 class InvalidFilterError(ScholarRagError):
     code = "invalid_filter"
 
@@ -27,3 +34,8 @@ class ServiceUnavailableError(ScholarRagError):
 
 class PipelineStageError(ScholarRagError):
     code = "pipeline_stage_failed"
+
+    def __init__(self, message: str, *, stage: str | None = None, cause: str | None = None) -> None:
+        super().__init__(message)
+        self.stage = stage
+        self.cause = cause
