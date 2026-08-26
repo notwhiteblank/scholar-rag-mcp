@@ -36,7 +36,12 @@ packages = ["src/scholar_rag"]
 [tool.pytest.ini_options]
 pythonpath = ["src"]
 testpaths = ["tests/unit", "tests/integration"]
+filterwarnings = [
+    "ignore:Failed to obtain server version.*",
+    "ignore:Qdrant client version.*is incompatible.*",
+]
 markers = [
     "e2e: end-to-end tests requiring real model services",
     "perf: performance regression tests",
+    "integration: tests requiring a real qdrant binary",
 ]
