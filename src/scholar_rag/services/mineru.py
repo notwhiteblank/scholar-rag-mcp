@@ -10,8 +10,6 @@ from glob import glob
 from pathlib import Path
 from typing import Any, cast
 
-from scholar_rag.core.config import Settings
-
 import httpx
 
 from scholar_rag.core.config import Settings
