@@ -138,6 +138,53 @@ def test_health_true(client):
     assert client.health() is True
 
 
+@respx.mock
+def test_rerank_duplicate_index_raises(client):
+    route = respx.post(RERANK_URL).mock(
+        return_value=httpx.Response(
+            200,
+            json={
+                "results": [
+                    {"index": 0, "relevance_score": 0.5},
+                    {"index": 0, "relevance_score": 0.7},
+                ]
+            },
+        )
+    )
+    with pytest.raises(ServiceUnavailableError) as exc_info:
+        client.rerank("q", ["a", "b"])
+    message = str(exc_info.value)
+    assert "expected 2" in message
+    assert "exactly once" in message
+    assert route.call_count == 1
+
+
+@respx.mock
+def test_rerank_missing_index_raises(client):
+    route = respx.post(RERANK_URL).mock(
+        return_value=httpx.Response(
+            200,
+            json={"results": [{"index": 0, "relevance_score": 0.5}]},
+        )
+    )
+    with pytest.raises(ServiceUnavailableError):
+        client.rerank("q", ["a", "b"])
+    assert route.call_count == 1
+
+
+@respx.mock
+def test_rerank_out_of_range_index_raises(client):
+    route = respx.post(RERANK_URL).mock(
+        return_value=httpx.Response(
+            200,
+            json={"results": [{"index": 3, "relevance_score": 0.5}]},
+        )
+    )
+    with pytest.raises(ServiceUnavailableError):
+        client.rerank("q", ["a", "b"])
+    assert route.call_count == 1
+
+
 def test_rerank_empty_returns_empty(client):
     assert client.rerank("q", []) == []
 

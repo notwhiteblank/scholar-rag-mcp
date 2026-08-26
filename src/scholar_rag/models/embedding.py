@@ -25,10 +25,25 @@ class _ApiEmbeddings(OpenAICompatClient):
                 raise ServiceUnavailableError(
                     f"embedding failed: HTTP {response.status_code}"
                 )
-            payload = response.json()
-            ordered = sorted(
-                payload.get("data", []), key=lambda item: item.get("index", 0)
-            )
+            expected = len(batch)
+            items = response.json().get("data", [])
+            if len(items) != expected:
+                raise ServiceUnavailableError(
+                    "embedding response length mismatch: "
+                    f"expected {expected} vectors, got {len(items)}"
+                )
+            try:
+                indices = [int(item.get("index", -1)) for item in items]
+            except (KeyError, TypeError, ValueError):
+                raise ServiceUnavailableError(
+                    "embedding response contains an item with an invalid index"
+                ) from None
+            if sorted(indices) != list(range(expected)):
+                raise ServiceUnavailableError(
+                    "embedding response index mismatch: expected indices "
+                    f"0..{expected - 1} exactly once, got indices {indices}"
+                )
+            ordered = sorted(items, key=lambda item: int(item.get("index", -1)))
             for item in ordered:
                 all_embeddings.append(list(item["embedding"]))
         return all_embeddings

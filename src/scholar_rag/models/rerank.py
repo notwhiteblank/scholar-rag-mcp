@@ -27,9 +27,22 @@ class _ApiReranker(OpenAICompatClient):
             )
             if response.status_code >= 400:
                 raise ServiceUnavailableError(f"rerank failed: HTTP {response.status_code}")
-            payload = response.json()
-            chunk_scores = [0.0] * len(batch)
-            for result in payload.get("results", []):
+            expected = len(batch)
+            results = response.json().get("results", [])
+            try:
+                result_indices = [int(result["index"]) for result in results]
+            except (KeyError, TypeError, ValueError):
+                raise ServiceUnavailableError(
+                    "rerank response contains a result with a missing or invalid index"
+                ) from None
+            if sorted(result_indices) != list(range(expected)):
+                raise ServiceUnavailableError(
+                    "rerank response index mismatch: expected "
+                    f"{expected} scores covering indices 0..{expected - 1} exactly once, "
+                    f"got {len(results)} results with indices {result_indices}"
+                )
+            chunk_scores = [0.0] * expected
+            for result in results:
                 chunk_scores[int(result["index"])] = float(result["relevance_score"])
             scores.extend(chunk_scores)
         return scores

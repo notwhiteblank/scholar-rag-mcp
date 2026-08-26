@@ -94,6 +94,74 @@ def test_health_true(client):
     assert client.health() is True
 
 
+@respx.mock
+def test_embed_fewer_vectors_raises(client):
+    route = respx.post(EMBED_URL).mock(
+        return_value=httpx.Response(
+            200,
+            json={"object": "list", "data": [{"index": 0, "embedding": [1.0]}]},
+        )
+    )
+    with pytest.raises(ServiceUnavailableError) as exc_info:
+        client.embed(["t0", "t1"])
+    message = str(exc_info.value)
+    assert "expected 2" in message
+    assert "got 1" in message
+    assert route.call_count == 1
+
+
+@respx.mock
+def test_embed_more_vectors_raises(client):
+    route = respx.post(EMBED_URL).mock(
+        return_value=httpx.Response(
+            200,
+            json={
+                "object": "list",
+                "data": [
+                    {"index": 0, "embedding": [1.0]},
+                    {"index": 1, "embedding": [2.0]},
+                    {"index": 2, "embedding": [3.0]},
+                ],
+            },
+        )
+    )
+    with pytest.raises(ServiceUnavailableError):
+        client.embed(["t0", "t1"])
+    assert route.call_count == 1
+
+
+@respx.mock
+def test_embed_duplicate_index_raises(client):
+    route = respx.post(EMBED_URL).mock(
+        return_value=httpx.Response(
+            200,
+            json={
+                "object": "list",
+                "data": [
+                    {"index": 0, "embedding": [1.0]},
+                    {"index": 0, "embedding": [2.0]},
+                ],
+            },
+        )
+    )
+    with pytest.raises(ServiceUnavailableError):
+        client.embed(["t0", "t1"])
+    assert route.call_count == 1
+
+
+@respx.mock
+def test_embed_out_of_range_index_raises(client):
+    route = respx.post(EMBED_URL).mock(
+        return_value=httpx.Response(
+            200,
+            json={"object": "list", "data": [{"index": 5, "embedding": [1.0]}]},
+        )
+    )
+    with pytest.raises(ServiceUnavailableError):
+        client.embed(["t0", "t1"])
+    assert route.call_count == 1
+
+
 FAKE_EMBED_SCRIPT = """
 class _Tensor:
     def __init__(self, rows):
