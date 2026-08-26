@@ -63,6 +63,7 @@ class VectorStore:
         for chunk, embed in zip(chunks, embeds, strict=True):
             payload = dict(payload_base)
             payload["chunk_index"] = chunk.chunk_index
+            payload["content"] = chunk.content
             payload["section"] = chunk.section
             payload["heading_path"] = chunk.heading_path
             points.append(

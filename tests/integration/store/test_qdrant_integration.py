@@ -115,6 +115,7 @@ def test_upsert_query_payloads_two_stage():
     payloads = store.payloads([ids[0]])
     assert payloads[ids[0]]["doc_id"] == "doc1"
     assert payloads[ids[0]]["title"] == "Doc One"
+    assert payloads[ids[0]]["content"] == chunks[0].content
     assert payloads[ids[0]]["chunk_index"] == 0
     assert payloads[ids[0]]["section"] == "body"
     assert payloads[ids[0]]["heading_path"] == "H"
