@@ -11,3 +11,7 @@ build/
 .env
 data/
 logs/
+spike/.pixi/
+spike/out/
+spike/output/
+spike/snapshots/
