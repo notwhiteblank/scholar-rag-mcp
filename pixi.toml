@@ -1,0 +1,52 @@
+[workspace]
+name = "scholar-rag-mcp"
+channels = ["conda-forge"]
+platforms = ["linux-64"]
+
+[dependencies]
+python = "3.12.*"
+pip = "*"
+
+[pypi-dependencies]
+scholar-rag-mcp = { path = ".", editable = true }
+pydantic = ">=2"
+pydantic-settings = "*"
+httpx = "*"
+openai = ">=1.40"
+qdrant-client = ">=1.19,<1.20"
+mcp = ">=1.0"
+fpdf2 = "*"
+
+[feature.dev.dependencies]
+python = "3.12.*"
+
+[feature.dev.pypi-dependencies]
+pytest = "*"
+pytest-asyncio = "*"
+ruff = "*"
+mypy = "*"
+respx = "*"
+
+[feature.mineru.dependencies]
+python = "3.12.*"
+
+[feature.mineru.pypi-dependencies]
+mineru = "==3.4.5"
+
+[feature.local-models.dependencies]
+python = "3.12.*"
+
+[feature.local-models.pypi-dependencies]
+torch = "*"
+transformers = "*"
+accelerate = "*"
+
+[environments]
+default = { features = ["dev"] }
+mineru = { features = ["mineru"] }
+local-models = { features = ["local-models"] }
+
+[tasks]
+lint = "ruff check src tests"
+typecheck = "mypy src"
+test = "pytest tests -q -m \"not e2e and not perf\""

@@ -1,0 +1,42 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "scholar-rag-mcp"
+version = "0.1.0"
+description = "Academic paper knowledge-base MCP tool with ingest, retrieval and chat over your document corpus"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "pydantic>=2",
+    "pydantic-settings",
+    "httpx",
+    "openai>=1.40",
+    "qdrant-client>=1.19",
+    "mcp>=1.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "pytest-asyncio",
+    "ruff",
+    "mypy",
+    "respx",
+    "fpdf2",
+]
+
+[project.scripts]
+scholar-rag-mcp = "scholar_rag.server.main:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/scholar_rag"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests/unit", "tests/integration"]
+markers = [
+    "e2e: end-to-end tests requiring real model services",
+    "perf: performance regression tests",
+]
