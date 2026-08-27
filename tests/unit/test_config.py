@@ -35,15 +35,15 @@ DEFAULTS: list[tuple[str, Callable[[], object]]] = [
     ("chat_backend", lambda: "api"),
     ("chat_base_url", lambda: ""),
     ("chat_api_key", lambda: ""),
-    ("chat_model", lambda: "Qwen3-8B"),
+    ("chat_model", lambda: "Qwen3.5-0.8B"),
     ("embed_backend", lambda: "api"),
     ("embed_base_url", lambda: ""),
     ("embed_api_key", lambda: ""),
-    ("embed_model", lambda: "Qwen3-VL-Embedding-2B"),
+    ("embed_model", lambda: "jina-embeddings-v5-text-small"),
     ("rerank_backend", lambda: "api"),
     ("rerank_base_url", lambda: ""),
     ("rerank_api_key", lambda: ""),
-    ("rerank_model", lambda: "Qwen3-VL-Reranker-2B"),
+    ("rerank_model", lambda: "jina-reranker-v3.5"),
     ("mineru_backend", lambda: "python"),
     ("mineru_api_url", lambda: "http://127.0.0.1:8010"),
     ("mineru_bin", lambda: "mineru"),
@@ -104,7 +104,7 @@ def test_data_dir_priority_env_then_file_then_default(monkeypatch):
 def test_missing_config_json_falls_back_to_defaults():
     settings = Settings.load()
     assert settings.data_dir == Path.home() / ".scholar-rag"
-    assert settings.chat_model == "Qwen3-8B"
+    assert settings.chat_model == "Qwen3.5-0.8B"
 
 
 def test_validate_runtime_lists_all_missing_base_urls():

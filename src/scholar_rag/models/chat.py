@@ -232,7 +232,7 @@ class ChatClient:
         backend: str = "api",
         base_url: str = "",
         api_key: str = "",
-        model: str = "Qwen3-8B",
+        model: str = "Qwen3.5-0.8B",
         timeout: float = DEFAULT_TIMEOUT,
         max_retries: int = DEFAULT_HTTP_MAX_RETRIES,
     ) -> None:

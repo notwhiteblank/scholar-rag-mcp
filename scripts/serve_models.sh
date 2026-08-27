@@ -10,11 +10,12 @@ done
 if [ "${#_required[@]}" -gt 0 ]; then
   echo "error: missing required model path variables: ${_required[*]}" >&2
   echo "each must be the absolute path to a local HuggingFace model directory;" >&2
-  echo "the path is also the name the served model is exposed under, so the matching" >&2
-  echo "SCHOLAR_RAG_*_MODEL client settings must equal it. Example:" >&2
-  echo "  SCHOLAR_RAG_CHAT_MODEL=/path/to/models/Qwen/Qwen3-8B \\" >&2
-  echo "  SCHOLAR_RAG_EMBED_MODEL=/path/to/models/Qwen/Qwen3-VL-Embedding-2B \\" >&2
-  echo "  SCHOLAR_RAG_RERANK_MODEL=/path/to/models/Qwen/Qwen3-VL-Reranker-2B \\" >&2
+  echo "the directory basename is the short name the served model is exposed under," >&2
+  echo "so the matching SCHOLAR_RAG_*_MODEL client settings must use that short name." >&2
+  echo "Example:" >&2
+  echo "  SCHOLAR_RAG_CHAT_MODEL=/path/to/models/Qwen/Qwen3.5-0.8B \\" >&2
+  echo "  SCHOLAR_RAG_EMBED_MODEL=/path/to/models/jinaai/jina-embeddings-v5-text-small \\" >&2
+  echo "  SCHOLAR_RAG_RERANK_MODEL=/path/to/models/jinaai/jina-reranker-v3.5 \\" >&2
   echo "  bash scripts/serve_models.sh" >&2
   exit 1
 fi
@@ -30,9 +31,12 @@ EMBED_GPU="${EMBED_GPU:-1}"
 RERANK_GPU="${RERANK_GPU:-2}"
 PIXI="${PIXI:-pixi}"
 MANIFEST="${MANIFEST:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../spike" && pwd)/pixi.toml}"
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 OUT_DIR="${OUT_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../spike" && pwd)/out}"
 mkdir -p "${OUT_DIR}"
+
+CHAT_NAME="$(basename "${CHAT_MODEL}")"
+EMBED_NAME="$(basename "${EMBED_MODEL}")"
+RERANK_NAME="$(basename "${RERANK_MODEL}")"
 
 health() {
   local port="$1"
@@ -49,38 +53,36 @@ health() {
 }
 
 CHAT_LOG="${OUT_DIR}/vllm_chat.log"
-echo "== chat (Qwen3-8B) on :${CHAT_PORT} GPU ${CHAT_GPU} (log: ${CHAT_LOG})"
+echo "== chat (${CHAT_NAME}) on :${CHAT_PORT} GPU ${CHAT_GPU} (log: ${CHAT_LOG})"
 CUDA_VISIBLE_DEVICES="${CHAT_GPU}" "${PIXI}" run -m "${MANIFEST}" vllm serve \
   "${CHAT_MODEL}" \
   --port "${CHAT_PORT}" \
   --max-model-len 4096 \
-  --gpu-memory-utilization 0.77 >"${CHAT_LOG}" 2>&1 &
+  --gpu-memory-utilization 0.77 \
+  --served-model-name "${CHAT_NAME}" >"${CHAT_LOG}" 2>&1 &
 CHAT_PID=$!
 health "${CHAT_PORT}" "${CHAT_LOG}" || true
 
 EMBED_LOG="${OUT_DIR}/vllm_embed.log"
-echo "== embed (Qwen3-VL-Embedding-2B) on :${EMBED_PORT} GPU ${EMBED_GPU} (log: ${EMBED_LOG})"
+echo "== embed (${EMBED_NAME}) on :${EMBED_PORT} GPU ${EMBED_GPU} (log: ${EMBED_LOG})"
 CUDA_VISIBLE_DEVICES="${EMBED_GPU}" "${PIXI}" run -m "${MANIFEST}" vllm serve \
   "${EMBED_MODEL}" \
   --port "${EMBED_PORT}" \
   --max-model-len 8192 \
   --gpu-memory-utilization 0.85 \
-  --convert embed \
-  --pooler-config '{"task":"embed","pooling_type":"MEAN","use_activation":true}' >"${EMBED_LOG}" 2>&1 &
+  --trust-remote-code \
+  --served-model-name "${EMBED_NAME}" >"${EMBED_LOG}" 2>&1 &
 EMBED_PID=$!
 health "${EMBED_PORT}" "${EMBED_LOG}" || true
 
 RERANK_LOG="${OUT_DIR}/vllm_rerank.log"
-echo "== rerank (Qwen3-VL-Reranker-2B) on :${RERANK_PORT} GPU ${RERANK_GPU} (log: ${RERANK_LOG})"
+echo "== rerank (${RERANK_NAME}) on :${RERANK_PORT} GPU ${RERANK_GPU} (log: ${RERANK_LOG})"
 CUDA_VISIBLE_DEVICES="${RERANK_GPU}" "${PIXI}" run -m "${MANIFEST}" vllm serve \
   "${RERANK_MODEL}" \
   --port "${RERANK_PORT}" \
   --max-model-len 8192 \
   --gpu-memory-utilization 0.85 \
-  --convert classify \
-  --pooler-config '{"task":"classify","pooling_type":"LAST","use_activation":true}' \
-  --hf-overrides '{"classifier_from_token":["no","yes"],"method":"from_2_way_softmax","num_labels":1}' \
-  --chat-template "${SCRIPT_DIR}/score_template.jinja" >"${RERANK_LOG}" 2>&1 &
+  --served-model-name "${RERANK_NAME}" >"${RERANK_LOG}" 2>&1 &
 RERANK_PID=$!
 health "${RERANK_PORT}" "${RERANK_LOG}" || true
 

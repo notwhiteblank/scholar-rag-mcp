@@ -9,7 +9,7 @@ from typing import Any
 from scholar_rag.core.errors import ServiceUnavailableError
 from scholar_rag.models.base import DEFAULT_HTTP_MAX_RETRIES, DEFAULT_TIMEOUT, OpenAICompatClient
 
-DEFAULT_MODEL_NAME = "Qwen3-VL-Reranker-2B"
+DEFAULT_MODEL_NAME = "jina-reranker-v3.5"
 _RERANKER_SCRIPT_NAME = "qwen3_vl_reranker"
 _RERANKER_INSTRUCTION = "Determine if the document is relevant to the query."
 

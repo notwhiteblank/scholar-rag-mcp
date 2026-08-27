@@ -9,7 +9,7 @@ from typing import Any
 from scholar_rag.core.errors import ServiceUnavailableError
 from scholar_rag.models.base import DEFAULT_HTTP_MAX_RETRIES, DEFAULT_TIMEOUT, OpenAICompatClient
 
-DEFAULT_MODEL_NAME = "Qwen3-VL-Embedding-2B"
+DEFAULT_MODEL_NAME = "jina-embeddings-v5-text-small"
 _EMBEDDING_SCRIPT_NAME = "qwen3_vl_embedding"
 
 

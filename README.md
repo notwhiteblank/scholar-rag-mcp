@@ -60,9 +60,9 @@ Environment ('chat', 'embed' and 'rerank' clients) expects OpenAI-compatible HTT
 
 | Service | Model | Port |
 |---|---|---|
-| chat | Qwen3-8B | 8101 |
-| embed | Qwen3-VL-Embedding-2B | 8102 |
-| rerank | Qwen3-VL-Reranker-2B | 8103 |
+| chat | Qwen3.5-0.8B | 8101 |
+| embed | jina-embeddings-v5-text-small | 8102 |
+| rerank | jina-reranker-v3.5 | 8103 |
 
 ```bash
 # point *_MODEL at your local model directories, then:
@@ -71,33 +71,33 @@ bash scripts/serve_models.sh
 
 `SCHOLAR_RAG_CHAT_MODEL`, `SCHOLAR_RAG_EMBED_MODEL` and `SCHOLAR_RAG_RERANK_MODEL` are
 **required** - the script exits with a message listing them if any is unset. Each value must
-be an absolute path to a local HuggingFace model directory; vLLM serves the model under that
-same path, so the matching client settings must hold the identical value (the served name
-equals the path). Replace the `/path/to/...` placeholders in `.env.example` accordingly.
-Ports (`CHAT_PORT`/`EMBED_PORT`/`RERANK_PORT`) and GPU ids remain optional with working
-defaults.
+be an absolute path to a local HuggingFace model directory; vLLM serves each model under a
+short name equal to the directory basename, so the client settings must use that short name
+(the served name no longer equals the full path). Replace the `/path/to/...` placeholders in
+`.env.example` accordingly. Ports (`CHAT_PORT`/`EMBED_PORT`/`RERANK_PORT`) and GPU ids remain
+optional with working defaults.
 
-The script pins the exact vLLM flags verified for these models (embed via `--convert embed`,
-rerank via `--convert classify` + a custom chat template). Model load takes several minutes;
-the script polls health until all three answer.
+The script pins the exact vLLM flags verified for these models (the Jina embed model needs
+`--trust-remote-code` for its custom code; the reranker runs with its default task, no extra
+flags). Model load takes several minutes; the script polls health until all three answer.
 
 ### Minimal environment
 
-Start from `.env.example` and set at least the model endpoints (placeholder paths - replace
-with your own, and make sure the served model names match exactly):
+Start from `.env.example` and set at least the model endpoints (use the short names the
+serve script exposes, equal to each model directory's basename):
 
 ```env
 SCHOLAR_RAG_DATA_DIR=~/.scholar-rag
 SCHOLAR_RAG_QDRANT_STORAGE_DIR=~/.local/share/scholar-rag/qdrant
 
 SCHOLAR_RAG_CHAT_BASE_URL=http://127.0.0.1:8101/v1
-SCHOLAR_RAG_CHAT_MODEL=/path/to/models/Qwen/Qwen3-8B
+SCHOLAR_RAG_CHAT_MODEL=Qwen3.5-0.8B
 
 SCHOLAR_RAG_EMBED_BASE_URL=http://127.0.0.1:8102/v1
-SCHOLAR_RAG_EMBED_MODEL=/path/to/models/Qwen/Qwen3-VL-Embedding-2B
+SCHOLAR_RAG_EMBED_MODEL=jina-embeddings-v5-text-small
 
 SCHOLAR_RAG_RERANK_BASE_URL=http://127.0.0.1:8103/v1
-SCHOLAR_RAG_RERANK_MODEL=/path/to/models/Qwen/Qwen3-VL-Reranker-2B
+SCHOLAR_RAG_RERANK_MODEL=jina-reranker-v3.5
 ```
 
 The embed model dimension is recorded in `kb_meta.json` at kb creation, so changing the
