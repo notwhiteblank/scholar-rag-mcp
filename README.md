@@ -1,5 +1,7 @@
 # scholar-rag-mcp
 
+<!-- mcp-name: io.github.notwhiteblank/scholar-rag-mcp -->
+
 > **Status: preview release (v0.1.0).** Interfaces and storage layout may change in future versions.
 
 **scholar-rag-mcp** is a publishable academic-paper knowledge-base MCP tool. Point it at a
