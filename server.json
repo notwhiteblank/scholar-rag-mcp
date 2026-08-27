@@ -1,0 +1,44 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.notwhiteblank/scholar-rag-mcp",
+  "title": "Scholar RAG MCP",
+  "description": "Academic-paper knowledge-base MCP server: ingest PDFs (MinerU), metadata normalization, section annotation, Qdrant vector search with reranking, two-phase KB management. 11 tools: search_chunks, search_documents, list_documents, get_document, get_document_text, add_document, remove_document, create_kb, delete_kb, list_kbs, get_job.",
+  "version": "0.1.0",
+  "packages": [
+    {
+      "registryType": "pypi",
+      "identifier": "scholar-rag-mcp",
+      "version": "0.1.0",
+      "transport": {
+        "type": "stdio"
+      },
+      "packageArguments": [],
+      "environmentVariables": [
+        {
+          "name": "SCHOLAR_RAG_DATA_DIR",
+          "description": "Data root directory (knowledge bases, caches, jobs)",
+          "isRequired": false
+        },
+        {
+          "name": "SCHOLAR_RAG_CHAT_BASE_URL",
+          "description": "OpenAI-compatible chat endpoint for annotation/keywords (e.g. local vLLM)",
+          "isRequired": true
+        },
+        {
+          "name": "SCHOLAR_RAG_EMBED_BASE_URL",
+          "description": "OpenAI-compatible embeddings endpoint",
+          "isRequired": true
+        },
+        {
+          "name": "SCHOLAR_RAG_RERANK_BASE_URL",
+          "description": "Rerank endpoint (/v1/rerank)",
+          "isRequired": true
+        }
+      ]
+    }
+  ],
+  "repository": {
+    "url": "https://github.com/notwhiteblank/scholar-rag-mcp",
+    "source": "github"
+  }
+}
