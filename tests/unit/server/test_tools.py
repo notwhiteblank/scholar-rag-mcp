@@ -489,7 +489,8 @@ def test_get_job_success_and_missing(env, ops):
     assert result["kb"] == kb
     assert result["progress"] == {"done": 0, "total": 0}
     assert result["result_summary"] == {"ok": True}
-    assert result["timings"] == {}
+    assert set(result["timings"]) == {"elapsed_s"}
+    assert result["timings"]["elapsed_s"] >= 0.0
     missing = tools_module.dispatch_tool("get_job", {"job_id": "no-such"})
     assert missing["error_code"] == "job_not_found"
 

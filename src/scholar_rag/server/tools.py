@@ -4,6 +4,7 @@ import json
 import math
 import threading
 from collections.abc import Callable
+from datetime import UTC, datetime
 from typing import Any
 
 from pydantic import BaseModel, ValidationError
@@ -12,6 +13,7 @@ from scholar_rag.core.errors import DocNotFoundError, KbNotFoundError, ScholarRa
 from scholar_rag.core.jobs import JobManager
 from scholar_rag.core.operations import Operations
 from scholar_rag.core.registry import Registry
+from scholar_rag.core.types import JobRecord
 from scholar_rag.retrieve import RetrievalEngine
 from scholar_rag.server.schemas import (
     AddDocumentParams,
@@ -278,6 +280,24 @@ def _run_list_kbs(params: ListKbsParams) -> dict[str, Any]:
     return ListKbsResult(kbs=_operations().list_kbs()).model_dump()
 
 
+_TERMINAL_JOB_STATUSES = frozenset({"succeeded", "failed", "cancelled", "interrupted"})
+
+
+def _parse_iso8601(value: str) -> datetime:
+    return datetime.fromisoformat(value.replace("Z", "+00:00"))
+
+
+def _job_elapsed_seconds(record: JobRecord) -> float:
+    elapsed: float
+    if record.status in _TERMINAL_JOB_STATUSES:
+        elapsed = _parse_iso8601(record.updated_at).timestamp() - _parse_iso8601(
+            record.created_at
+        ).timestamp()
+    else:
+        elapsed = datetime.now(UTC).timestamp() - _parse_iso8601(record.created_at).timestamp()
+    return round(max(0.0, elapsed), 3)
+
+
 def _run_get_job(params: GetJobParams) -> dict[str, Any]:
     record = _operations().get_job(params.job_id)
     result = GetJobResult(
@@ -289,7 +309,7 @@ def _run_get_job(params: GetJobParams) -> dict[str, Any]:
         current_doc=record.current_doc,
         error=record.error,
         result_summary=record.result,
-        timings={},
+        timings={"elapsed_s": _job_elapsed_seconds(record)},
         created_at=record.created_at,
         updated_at=record.updated_at,
     )
