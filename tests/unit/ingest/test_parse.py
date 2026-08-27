@@ -66,6 +66,22 @@ def test_parse_dispatches_to_configured_backend(
     assert mineru_mod.parse(source) == "parsed doc.pdf"
 
 
+def test_build_entry_kwargs_targets_mineru_34_api(tmp_path: Path) -> None:
+    def entry(output_dir, pdf_file_names, pdf_bytes_list, p_lang_list, backend="pipeline"):
+        del output_dir, pdf_file_names, pdf_bytes_list, p_lang_list, backend
+
+    source = tmp_path / "doc.pdf"
+    source.write_bytes(b"%PDF-1.4\n%%EOF\n")
+    kwargs = mineru_mod._build_entry_kwargs(entry, source, tmp_path / "out")
+    assert kwargs["output_dir"] == str(tmp_path / "out")
+    assert kwargs["pdf_file_names"] == ["doc.pdf"]
+    assert kwargs["pdf_bytes_list"] == [b"%PDF-1.4\n%%EOF\n"]
+    assert kwargs["p_lang_list"] == ["en"]
+    assert kwargs["backend"] == "pipeline"
+    assert kwargs["formula_enable"] is True
+    assert kwargs["table_enable"] is True
+
+
 def test_parse_failure_raises_with_backend_name(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

@@ -52,6 +52,17 @@ async def _coerce_awaitable(awaitable: Awaitable[Any]) -> Any:
 
 
 def _build_entry_kwargs(entry: Callable[..., Any], pdf_path: Path, output_dir: Path) -> dict[str, Any]:
+    parameters = inspect.signature(entry).parameters
+    if "pdf_file_names" in parameters:
+        return {
+            "output_dir": str(output_dir),
+            "pdf_file_names": [pdf_path.name],
+            "pdf_bytes_list": [pdf_path.read_bytes()],
+            "p_lang_list": ["en"],
+            "backend": _PIPELINE_BACKEND,
+            "formula_enable": True,
+            "table_enable": True,
+        }
     base: dict[str, object] = {
         "pdf_file": str(pdf_path),
         "output_dir": str(output_dir),
@@ -60,10 +71,6 @@ def _build_entry_kwargs(entry: Callable[..., Any], pdf_path: Path, output_dir: P
         "formula_enable": True,
         "table_enable": True,
     }
-    try:
-        parameters = inspect.signature(entry).parameters
-    except (TypeError, ValueError):
-        return base
     return {key: value for key, value in base.items() if key in parameters}
 
 
