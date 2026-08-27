@@ -1,0 +1,64 @@
+{
+  "manifest_version": "0.4",
+  "name": "scholar-rag-mcp",
+  "display_name": "Scholar RAG MCP",
+  "version": "0.1.0",
+  "description": "Academic paper knowledge-base MCP server: PDF ingest, vector search with reranking, KB management.",
+  "long_description": "Point it at a folder of PDFs and it ingests each paper through a real parsing pipeline (MinerU), normalizes metadata, annotates section structure, chunks and embeds the text, and stores everything in Qdrant - after which an agent can semantically search chunks, run PubMed-style document queries, read full text section by section, add/remove single papers, and manage knowledge bases - all through 11 MCP tools over stdio. Requires OpenAI-compatible model endpoints (chat/embed/rerank, e.g. local vLLM) and local disk storage; see README.",
+  "author": {
+    "name": "NotWhiteBlank",
+    "url": "https://github.com/notwhiteblank"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/notwhiteblank/scholar-rag-mcp"
+  },
+  "homepage": "https://github.com/notwhiteblank/scholar-rag-mcp",
+  "documentation": "https://github.com/notwhiteblank/scholar-rag-mcp/blob/main/README.md",
+  "license": "MIT",
+  "server": {
+    "type": "uv",
+    "entry_point": "src/scholar_rag/server/main.py"
+  },
+  "compatibility": {
+    "platforms": ["linux", "darwin"],
+    "runtimes": {
+      "python": ">=3.12,<4.0"
+    }
+  },
+  "user_config": {
+    "chat_base_url": {
+      "type": "string",
+      "title": "Chat endpoint",
+      "description": "OpenAI-compatible /v1 base URL for annotation/keywords (e.g. local vLLM)",
+      "required": true
+    },
+    "embed_base_url": {
+      "type": "string",
+      "title": "Embedding endpoint",
+      "description": "OpenAI-compatible /v1 base URL for embeddings",
+      "required": true
+    },
+    "rerank_base_url": {
+      "type": "string",
+      "title": "Rerank endpoint",
+      "description": "Base URL exposing /v1/rerank (e.g. local vLLM)",
+      "required": true
+    },
+    "data_dir": {
+      "type": "directory",
+      "title": "Data directory",
+      "description": "Where knowledge bases are stored",
+      "required": false,
+      "default": "${HOME}/.scholar-rag"
+    }
+  },
+  "mcp_config": {
+    "env": {
+      "SCHOLAR_RAG_CHAT_BASE_URL": "${user_config.chat_base_url}",
+      "SCHOLAR_RAG_EMBED_BASE_URL": "${user_config.embed_base_url}",
+      "SCHOLAR_RAG_RERANK_BASE_URL": "${user_config.rerank_base_url}",
+      "SCHOLAR_RAG_DATA_DIR": "${user_config.data_dir}"
+    }
+  }
+}
