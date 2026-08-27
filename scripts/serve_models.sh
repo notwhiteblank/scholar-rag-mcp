@@ -1,9 +1,27 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-CHAT_MODEL="${CHAT_MODEL:-/path/to/models/Qwen/Qwen3-8B}"
-EMBED_MODEL="${EMBED_MODEL:-/path/to/models/Qwen/Qwen3-VL-Embedding-2B}"
-RERANK_MODEL="${RERANK_MODEL:-/path/to/models/Qwen/Qwen3-VL-Reranker-2B}"
+_required=()
+for _var in SCHOLAR_RAG_CHAT_MODEL SCHOLAR_RAG_EMBED_MODEL SCHOLAR_RAG_RERANK_MODEL; do
+  if [ -z "${!_var:-}" ]; then
+    _required+=("${_var}")
+  fi
+done
+if [ "${#_required[@]}" -gt 0 ]; then
+  echo "error: missing required model path variables: ${_required[*]}" >&2
+  echo "each must be the absolute path to a local HuggingFace model directory;" >&2
+  echo "the path is also the name the served model is exposed under, so the matching" >&2
+  echo "SCHOLAR_RAG_*_MODEL client settings must equal it. Example:" >&2
+  echo "  SCHOLAR_RAG_CHAT_MODEL=/path/to/models/Qwen/Qwen3-8B \\" >&2
+  echo "  SCHOLAR_RAG_EMBED_MODEL=/path/to/models/Qwen/Qwen3-VL-Embedding-2B \\" >&2
+  echo "  SCHOLAR_RAG_RERANK_MODEL=/path/to/models/Qwen/Qwen3-VL-Reranker-2B \\" >&2
+  echo "  bash scripts/serve_models.sh" >&2
+  exit 1
+fi
+
+CHAT_MODEL="${SCHOLAR_RAG_CHAT_MODEL}"
+EMBED_MODEL="${SCHOLAR_RAG_EMBED_MODEL}"
+RERANK_MODEL="${SCHOLAR_RAG_RERANK_MODEL}"
 CHAT_PORT="${CHAT_PORT:-8101}"
 EMBED_PORT="${EMBED_PORT:-8102}"
 RERANK_PORT="${RERANK_PORT:-8103}"

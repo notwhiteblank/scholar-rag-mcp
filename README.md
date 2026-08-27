@@ -61,9 +61,17 @@ Environment ('chat', 'embed' and 'rerank' clients) expects OpenAI-compatible HTT
 | rerank | Qwen3-VL-Reranker-2B | 8103 |
 
 ```bash
-# adjust CHAT_MODEL/EMBED_MODEL/RERANK_MODEL/CHAT_PORT/... at the top of the script, then:
+# point *_MODEL at your local model directories, then:
 bash scripts/serve_models.sh
 ```
+
+`SCHOLAR_RAG_CHAT_MODEL`, `SCHOLAR_RAG_EMBED_MODEL` and `SCHOLAR_RAG_RERANK_MODEL` are
+**required** - the script exits with a message listing them if any is unset. Each value must
+be an absolute path to a local HuggingFace model directory; vLLM serves the model under that
+same path, so the matching client settings must hold the identical value (the served name
+equals the path). Replace the `/path/to/...` placeholders in `.env.example` accordingly.
+Ports (`CHAT_PORT`/`EMBED_PORT`/`RERANK_PORT`) and GPU ids remain optional with working
+defaults.
 
 The script pins the exact vLLM flags verified for these models (embed via `--convert embed`,
 rerank via `--convert classify` + a custom chat template). Model load takes several minutes;
@@ -151,6 +159,7 @@ pixi run scholar-rag-mcp
 │   ├── catalog.sqlite3         # documents / authors / keywords / chunks + FTS5
 │   └── documents/<doc_id>/     # source.pdf, full_text.md, sections.json
 ├── cache/parse/                # MinerU markdown cache, keyed by content hash
+├── cache/resolver/             # annotation resolver cache, keyed by content hash
 ├── jobs.sqlite3                # async job history
 └── bin/                        # auto-downloaded Qdrant binary (v1.12.5)
 ```
@@ -190,4 +199,10 @@ Known constraints worth repeating:
 - **MinerU runs in its own pixi environment** because its transformers version is mutually
   exclusive with the vLLM one. PDF parsing thus prefers `pixi run -e mineru`.
 - **MinerU weights** (~3.2 GB) download on first parse into `~/.cache/modelscope/`.
+- **Metadata title heuristic**: titles are only picked locally when the MinerU markdown starts
+  with an `#`/`##` heading, so a leading `## Abstract` (etc.) can be misread as the title. This
+  affects the local-heuristic metadata tier only; the CrossRef tier (used when a DOI is found)
+  normally corrects it.
+- **Tool dispatch**: unknown extra arguments to a tool are silently ignored rather than
+  rejected.
 - **9p storage limit**: Qdrant storage must be on a local filesystem.
