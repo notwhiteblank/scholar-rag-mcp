@@ -2,7 +2,7 @@
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.notwhiteblank/scholar-rag-mcp",
   "title": "Scholar RAG MCP",
-  "description": "Academic-paper knowledge-base MCP server: ingest PDFs (MinerU), metadata normalization, section annotation, Qdrant vector search with reranking, two-phase KB management. 11 tools: search_chunks, search_documents, list_documents, get_document, get_document_text, add_document, remove_document, create_kb, delete_kb, list_kbs, get_job.",
+  "description": "Academic paper knowledge-base MCP server: PDF ingest, vector search with reranking, KB management.",
   "version": "0.1.0",
   "packages": [
     {
