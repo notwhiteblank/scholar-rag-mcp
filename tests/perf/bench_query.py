@@ -58,7 +58,7 @@ def _now_iso() -> str:
     return datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
-def setup_env() -> tuple[Path, Path]:
+def setup_env(real_embed: bool) -> tuple[Path, Path]:
     """Point SCHOLAR_RAG_* at throwaway local paths and return (root, data_dir)."""
     root = Path(tempfile.mkdtemp(prefix="scholar-bench-", dir="/tmp"))
     storage = root / "qdrant"
@@ -67,9 +67,10 @@ def setup_env() -> tuple[Path, Path]:
     os.environ["SCHOLAR_RAG_QDRANT_STORAGE_DIR"] = str(storage)
     if _SPIKE_BINARY.is_file():
         os.environ["SCHOLAR_RAG_QDRANT_BIN"] = str(_SPIKE_BINARY)
-    for key in ("SCHOLAR_RAG_EMBED_BASE_URL", "SCHOLAR_RAG_EMBED_MODEL",
-                "SCHOLAR_RAG_EMBED_API_KEY"):
-        os.environ.pop(key, None)
+    if not real_embed:
+        for key in ("SCHOLAR_RAG_EMBED_BASE_URL", "SCHOLAR_RAG_EMBED_MODEL",
+                    "SCHOLAR_RAG_EMBED_API_KEY"):
+            os.environ.pop(key, None)
     return root, data_dir
 
 
@@ -259,10 +260,16 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     if args.queries < _MIN_QUERIES:
         parser.error(f"--queries must be >= {_MIN_QUERIES}")
+    if args.real_embed and not os.environ.get("SCHOLAR_RAG_EMBED_BASE_URL"):
+        parser.error(
+            "--real-embed requires SCHOLAR_RAG_EMBED_BASE_URL to be set to an "
+            "OpenAI-compatible embeddings endpoint (e.g. http://127.0.0.1:8102/v1); "
+            "optionally configure SCHOLAR_RAG_EMBED_MODEL and SCHOLAR_RAG_EMBED_API_KEY"
+        )
     if args.real_embed:
         os.environ["BENCH_REAL_EMBED"] = "1"
 
-    root, _data_dir = setup_env()
+    root, _data_dir = setup_env(args.real_embed)
     print(f"bench root: {root}")
     print("building collection...")
     total = build_collection(args.docs, args.chunks)

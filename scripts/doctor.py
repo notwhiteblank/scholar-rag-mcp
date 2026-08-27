@@ -19,12 +19,14 @@ import tempfile
 from pathlib import Path
 
 try:
+    from pydantic import ValidationError
     from scholar_rag.core.config import Settings
     from scholar_rag.core.errors import ConfigError
     from scholar_rag.models import get_chat_client, get_embedding_client, get_rerank_client
 except ImportError:
     Settings = None  # type: ignore[assignment]
     ConfigError = Exception  # type: ignore[assignment]
+    ValidationError = Exception  # type: ignore[assignment]
     get_chat_client = None  # type: ignore[assignment]
     get_embedding_client = None  # type: ignore[assignment]
     get_rerank_client = None  # type: ignore[assignment]
@@ -197,6 +199,22 @@ def _qdrant_report(report: _Report, settings: Settings) -> None:
                "(9p/network mounts cause EINVAL)")
 
 
+def _config_diagnosis(exc: Exception) -> str:
+    errors = getattr(exc, "errors", None)
+    if not callable(errors):
+        return str(exc)
+    details: list[str] = []
+    for error in errors()[:2]:
+        loc = error.get("loc")
+        field = loc[0] if isinstance(loc, tuple) and loc else None
+        if isinstance(field, str) and field.isidentifier():
+            label = f"SCHOLAR_RAG_{field.upper()}"
+        else:
+            label = str(field) if field is not None else "?"
+        details.append(f"{label}: {error.get('msg', '')}")
+    return "invalid configuration value; " + "; ".join(details)
+
+
 def main(argv: list[str] | None = None) -> int:
     if Settings is None:
         print("\u2717 scholar_rag package: import failed - run this doctor inside the "
@@ -205,12 +223,14 @@ def main(argv: list[str] | None = None) -> int:
     report = _Report()
     try:
         settings = Settings.load()
-    except ConfigError as exc:
-        report.add(False, "config", f"Settings.load() failed: {exc}")
+    except (ConfigError, ValidationError) as exc:
+        note = _config_diagnosis(exc) if isinstance(exc, ValidationError) else str(exc)
+        report.add(False, "config", f"Settings.load() failed: {note}")
         try:
             settings = Settings()
-        except ConfigError as exc2:
-            report.add(False, "config", f"Settings() also failed: {exc2}")
+        except (ConfigError, ValidationError) as exc2:
+            note2 = _config_diagnosis(exc2) if isinstance(exc2, ValidationError) else str(exc2)
+            report.add(False, "config", f"Settings() also failed: {note2}")
             report.print()
             print("SOME CHECKS FAILED (exit code 1)")
             return 1

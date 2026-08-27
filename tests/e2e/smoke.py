@@ -115,7 +115,6 @@ def test_full_chain_smoke(monkeypatch, tmp_path) -> None:
     for name in ("paper_a", "paper_b", "paper_c"):
         shutil.copy2(_FIXTURES / f"{name}.pdf", papers_dir / f"{name}.pdf")
 
-    # step 1: create_kb -> job complete
     created = _call("create_kb", {"kb_name": "smoke", "folder_path": str(papers_dir)})
     record = _wait_job("smoke", created["job_id"])
     assert record["status"] == "succeeded", f"create_kb failed: {_barf(record)}"
@@ -124,7 +123,6 @@ def test_full_chain_smoke(monkeypatch, tmp_path) -> None:
     assert record["result_summary"]["failed"] == 0, _barf(record)
     assert "elapsed_s" in record["timings"]
 
-    # step 2: list_documents / search_documents
     listed = _call("list_documents", {"kb": "smoke", "page_size": 20})
     assert listed["total"] == 3
     doc_ids = [row["doc_id"] for row in listed["results"]]
@@ -133,14 +131,12 @@ def test_full_chain_smoke(monkeypatch, tmp_path) -> None:
     assert hit["total"] == 1, f"expected one wireless routing paper, got {hit}"
     assert hit["results"][0]["title"].startswith("Graph Neural Networks")
 
-    # step 3: search_chunks returns non-empty with both scores
     chunks = _call("search_chunks", {"kb": "smoke", "query": "yield forecasting remote sensing", "top_k": 5})
     assert chunks["chunks"], "search_chunks returned no results"
     first = chunks["chunks"][0]
     assert first["embed_score"] is not None
     assert first["rerank_score"] is not None, "reranker did not score candidates"
 
-    # step 4: search_chunks with metadata filter (doc_id) is effective
     filtered = _call(
         "search_chunks",
         {"kb": "smoke", "query": "yield forecasting", "top_k": 10,
@@ -152,12 +148,10 @@ def test_full_chain_smoke(monkeypatch, tmp_path) -> None:
             f"filter leaked doc {chunk['metadata']['doc_id']} outside {doc_ids[0]}"
         )
 
-    # step 5: get_document -> outline present
     overview = _call("get_document", {"kb": "smoke", "doc_id": doc_ids[0]})
     assert overview["outline"], "get_document returned an empty outline"
     assert overview["total_chars"] > 0
 
-    # step 6: get_document_text pagination reassembles and bounds-checked
     target = doc_ids[0]
     page_size = max(1, overview["total_chars"] // 3)
     total_pages = None
@@ -191,7 +185,6 @@ def test_full_chain_smoke(monkeypatch, tmp_path) -> None:
     )
     assert missing_section["error_code"] == "invalid_request"
 
-    # step 7: remove_document -> stats and query no longer matches
     removed = _call("remove_document", {"kb": "smoke", "doc_id": target})
     assert removed["chunks_deleted"] >= 1
     assert removed["catalog_deleted"] is True
@@ -205,7 +198,6 @@ def test_full_chain_smoke(monkeypatch, tmp_path) -> None:
     )
     assert gone["chunks"] == [], "removed document still matches search_chunks"
 
-    # step 8: delete_kb two-phase
     preview = _call("delete_kb", {"kb": "smoke"})
     assert preview["doc_count"] == 2
     assert preview["chunk_count"] >= 2
