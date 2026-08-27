@@ -1,5 +1,7 @@
 # scholar-rag-mcp
 
+> **Status: preview release (v0.1.0).** Interfaces and storage layout may change in future versions.
+
 **scholar-rag-mcp** is a publishable academic-paper knowledge-base MCP tool. Point it at a
 folder of PDFs and it ingests each paper through a real parsing pipeline (MinerU), normalizes
 metadata, annotates section structure, chunks and embeds the text, and stores everything in
