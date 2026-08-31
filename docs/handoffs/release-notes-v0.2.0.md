@@ -18,8 +18,8 @@
   (override with `SCHOLAR_RAG_QDRANT_STORAGE_DIR`).
 - **Cross-platform CI** (Phase 5): the GitHub Actions matrix runs the test suite
   on Ubuntu, Windows and macOS runners; macOS arm64 is covered by
-  `macos-latest`. macOS x64 is supported at code level (an x64 runner is in the
-  matrix when available).
+  `macos-latest`. macOS x64 is supported at code level (no x64 macOS CI runner:
+  GitHub x64 macOS runners require larger-runner billing).
 - **Documentation**: README and `.env.example` now document platform defaults,
   the Linux-only deployment script, and per-platform constraints.
 
@@ -53,7 +53,8 @@ pytest). The 100k-chunk query benchmark continues to pass its SPEC §11 budget
 2. **macOS x64 (Intel)** - covered at code level; macOS x64 wheels are no longer
    published for the torch ecosystem, so the `mineru`/`local-models` pixi
    environments are not available on osx-64 (the default environment is). CI
-   covers macOS arm64 via `macos-latest`, plus an x64 runner when available.
+   covers macOS arm64 via `macos-latest`; there is no x64 macOS CI runner
+   (GitHub x64 macOS runners require larger-runner billing).
 3. **Windows long paths** - deep data directories can hit the 260-char path
    limit; keep `SCHOLAR_RAG_DATA_DIR` shallow or enable Windows long path
    support.

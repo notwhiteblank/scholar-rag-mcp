@@ -2,8 +2,6 @@
 
 <!-- mcp-name: io.github.notwhiteblank/scholar-rag-mcp -->
 
-> **Status: preview release (v0.2.0).** Interfaces and storage layout may change in future versions.
-
 **scholar-rag-mcp** is a publishable academic-paper knowledge-base MCP tool. Point it at a
 folder of PDFs and it ingests each paper through a real parsing pipeline (MinerU), normalizes
 metadata, annotates section structure, chunks and embeds the text, and stores everything in
@@ -240,5 +238,5 @@ Known constraints worth repeating:
   deployment script is Linux-only; Windows/macOS use any OpenAI-compatible server.
 - **Windows long paths**: deep data directories can hit the 260-char limit; keep
   `SCHOLAR_RAG_DATA_DIR` shallow or enable Windows long path support.
-- **macOS x64 CI**: covered at code level; CI matrix runs macOS arm64 (plus an x64
-  runner when available).
+- **macOS x64 CI**: covered at code level only; GitHub x64 macOS runners require
+  larger-runner billing, so the CI matrix runs macOS arm64 (`macos-latest`).
