@@ -2,7 +2,7 @@
 
 <!-- mcp-name: io.github.notwhiteblank/scholar-rag-mcp -->
 
-> **Status: preview release (v0.1.0).** Interfaces and storage layout may change in future versions.
+> **Status: preview release (v0.2.0).** Interfaces and storage layout may change in future versions.
 
 **scholar-rag-mcp** is a publishable academic-paper knowledge-base MCP tool. Point it at a
 folder of PDFs and it ingests each paper through a real parsing pipeline (MinerU), normalizes
@@ -10,7 +10,7 @@ metadata, annotates section structure, chunks and embeds the text, and stores ev
 Qdrant - after which an agent (or you) can semantically search chunks, run PubMed-style
 document queries, read full text section by section, add/remove single papers, and manage
 knowledge bases - all through 11 MCP tools over stdio. Embedding, annotation and re-ranking
-run on OpenAI-compatible model services (vLLM) with in-process fallbacks.
+run on OpenAI-compatible model services (e.g. vLLM) with in-process fallbacks.
 
 ## Features
 
@@ -28,12 +28,16 @@ run on OpenAI-compatible model services (vLLM) with in-process fallbacks.
   `remove_document`, `get_document`, `get_document_text`, `list_documents`, `search_documents`,
   `search_chunks`, `get_job`.
 - **Self-contained storage**: knowledge bases live under a single data directory
-  (`~/.scholar-rag`); Qdrant is either auto-launched (single binary, version-pinned) or
-  connected to an external instance.
+  (default location is platform-specific, see Data layout); Qdrant is either auto-launched
+  (single binary, version-pinned) or connected to an external instance.
 
 ## Installation
 
 Requires [pixi](https://pixi.sh). From the repository root:
+
+scholar-rag-mcp runs on Linux x64, Windows x64 and macOS (Intel and Apple Silicon).
+The pixi environments are locked for all four targets; the Qdrant binary used for
+auto-launch is downloaded per platform on first use.
 
 ```bash
 pixi install                      # installs the default environment
@@ -81,14 +85,22 @@ The script pins the exact vLLM flags verified for these models (the Jina embed m
 `--trust-remote-code` for its custom code; the reranker runs with its default task, no extra
 flags). Model load takes several minutes; the script polls health until all three answer.
 
+`scripts/serve_models.sh` is **Linux-only** (bash + CUDA + vLLM; vLLM has no Windows
+support). On Windows/macOS point the `*_BASE_URL` settings at any OpenAI-compatible
+server instead - for example Ollama (`http://127.0.0.1:11434/v1`), LM Studio's local
+server, or a llama.cpp server - and set each `*_MODEL` to the model name that server
+reports. The rerank endpoint must expose `/v1/rerank` (or leave reranking to the
+embed-only fallback).
+
 ### Minimal environment
 
 Start from `.env.example` and set at least the model endpoints (use the short names the
 serve script exposes, equal to each model directory's basename):
 
 ```env
-SCHOLAR_RAG_DATA_DIR=~/.scholar-rag
-SCHOLAR_RAG_QDRANT_STORAGE_DIR=~/.local/share/scholar-rag/qdrant
+# data dir is optional - defaults to the platform data directory (see Data layout)
+# SCHOLAR_RAG_DATA_DIR=
+# SCHOLAR_RAG_QDRANT_STORAGE_DIR=
 
 SCHOLAR_RAG_CHAT_BASE_URL=http://127.0.0.1:8101/v1
 SCHOLAR_RAG_CHAT_MODEL=Qwen3.5-0.8B
@@ -157,7 +169,7 @@ pixi run scholar-rag-mcp
 ## Data layout
 
 ```
-<data_dir>/                     # SCHOLAR_RAG_DATA_DIR, default ~/.scholar-rag
+<data_dir>/                     # SCHOLAR_RAG_DATA_DIR, default: platform data dir (below)
 ├── kbs/<kb_name>/
 │   ├── kb_meta.json            # dimension, chunk config, schema version
 │   ├── catalog.sqlite3         # documents / authors / keywords / chunks + FTS5
@@ -165,12 +177,26 @@ pixi run scholar-rag-mcp
 ├── cache/parse/                # MinerU markdown cache, keyed by content hash
 ├── cache/resolver/             # annotation resolver cache, keyed by content hash
 ├── jobs.sqlite3                # async job history
-└── bin/                        # auto-downloaded Qdrant binary (v1.12.5)
+├── bin/                        # auto-downloaded Qdrant binary (v1.12.5)
+└── qdrant-storage/             # default QDRANT_STORAGE_DIR location
 ```
 
-Qdrant storage lives outside `data_dir` at `QDRANT_STORAGE_DIR` (default
-`~/.local/share/scholar-rag/qdrant`) - it must be on a local filesystem, not a 9p/network
+Default `data_dir` per platform (override with `SCHOLAR_RAG_DATA_DIR`):
+
+| Platform | Default |
+|---|---|
+| Linux | `$XDG_DATA_HOME/scholar-rag` (falls back to `~/.local/share/scholar-rag`) |
+| macOS | `~/Library/Application Support/scholar-rag` |
+| Windows | `%LOCALAPPDATA%\scholar-rag` |
+
+Qdrant storage defaults to `<data_dir>/qdrant-storage` (override with
+`SCHOLAR_RAG_QDRANT_STORAGE_DIR`) - it must be on a local filesystem, not a 9p/network
 mount.
+
+**Upgrading from v0.1.0 on Linux**: the old defaults (`~/.scholar-rag` and
+`~/.local/share/scholar-rag/qdrant`) are migrated automatically on first start; if the
+new location already has data, migration is skipped with a warning and the old files
+are left untouched.
 
 ### Two-phase kb deletion
 
@@ -193,7 +219,7 @@ python tests/perf/bench_query.py                          # query latency benchm
 ## Release notes
 
 For known limitations and upgrade guidance see
-`docs/handoffs/release-notes-v0.1.0.md`.
+`docs/handoffs/release-notes-v0.2.0.md`.
 
 Known constraints worth repeating:
 
@@ -210,3 +236,9 @@ Known constraints worth repeating:
 - **Tool dispatch**: unknown extra arguments to a tool are silently ignored rather than
   rejected.
 - **9p storage limit**: Qdrant storage must be on a local filesystem.
+- **Platform support**: Linux x64 / Windows x64 / macOS Intel+Apple Silicon. The vLLM
+  deployment script is Linux-only; Windows/macOS use any OpenAI-compatible server.
+- **Windows long paths**: deep data directories can hit the 260-char limit; keep
+  `SCHOLAR_RAG_DATA_DIR` shallow or enable Windows long path support.
+- **macOS x64 CI**: covered at code level; CI matrix runs macOS arm64 (plus an x64
+  runner when available).

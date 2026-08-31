@@ -22,8 +22,8 @@
 
 | Query class | queries | p50 (ms) | p95 (ms) | max (ms) | budget | verdict |
 |---|---|---|---|---|---|---|
-| unfiltered | 100 | 14.6 | 19.1 | 63.7 | p95<1000 | PASS |
-| filtered | 100 | 12.0 | 13.8 | 17.9 | p95<1000 | PASS |
+| unfiltered | 100 | 13.8 | 16.3 | 59.2 | p95<1000 | PASS |
+| filtered | 100 | 14.4 | 16.5 | 19.0 | p95<1000 | PASS |
 
 **Overall verdict: PASS**
 

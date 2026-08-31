@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "scholar-rag-mcp"
-version = "0.1.0"
+version = "0.2.0"
 description = "Academic paper knowledge-base MCP tool with ingest, retrieval and chat over your document corpus"
 readme = "README.md"
 requires-python = ">=3.12"
@@ -25,6 +25,21 @@ dev = [
     "mypy",
     "respx",
     "fpdf2",
+]
+mineru = [
+    "mineru==3.4.5",
+    "PyYAML>=6.0.1,<7",
+    "ftfy>=6.3.1,<7",
+    "shapely>=2.0.7,<3",
+    "pyclipper>=1.3.0,<2",
+    "torch>=2.6.0,<3",
+    "torchvision",
+    "accelerate",
+]
+local-models = [
+    "torch",
+    "transformers",
+    "accelerate",
 ]
 
 [project.scripts]

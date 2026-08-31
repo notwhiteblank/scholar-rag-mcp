@@ -2,7 +2,7 @@
   "manifest_version": "0.4",
   "name": "scholar-rag-mcp",
   "display_name": "Scholar RAG MCP",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Academic paper knowledge-base MCP server: PDF ingest, vector search with reranking, KB management.",
   "long_description": "Point it at a folder of PDFs and it ingests each paper through a real parsing pipeline (MinerU), normalizes metadata, annotates section structure, chunks and embeds the text, and stores everything in Qdrant - after which an agent can semantically search chunks, run PubMed-style document queries, read full text section by section, add/remove single papers, and manage knowledge bases - all through 11 MCP tools over stdio. Requires OpenAI-compatible model endpoints (chat/embed/rerank, e.g. local vLLM) and local disk storage; see README.",
   "author": {
@@ -21,7 +21,7 @@
     "entry_point": "src/scholar_rag/server/main.py"
   },
   "compatibility": {
-    "platforms": ["linux", "darwin"],
+    "platforms": ["linux", "darwin", "windows"],
     "runtimes": {
       "python": ">=3.12,<4.0"
     }
@@ -48,7 +48,7 @@
     "data_dir": {
       "type": "directory",
       "title": "Data directory",
-      "description": "Where knowledge bases are stored",
+      "description": "Where knowledge bases are stored (default: platform data dir, see README)",
       "required": false,
       "default": "${HOME}/.scholar-rag"
     }
