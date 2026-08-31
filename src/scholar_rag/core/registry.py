@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import json
-import os
 import re
 import shutil
 import sqlite3
@@ -12,6 +11,7 @@ from typing import Any
 
 from scholar_rag.core.config import Settings
 from scholar_rag.core.errors import KbExistsError, KbNotFoundError
+from scholar_rag.core.fsutil import move_dir
 from scholar_rag.store.catalog import Catalog
 from scholar_rag.store.layout import kb_dir, kbs_root
 
@@ -63,7 +63,7 @@ class Registry:
             (tmp / _META_FILE).write_text(json.dumps(meta, ensure_ascii=False), encoding="utf-8")
             Catalog(tmp / _CATALOG_FILE)
             (tmp / _DOCUMENTS_DIR).mkdir()
-            os.replace(tmp, target)
+            move_dir(tmp, target)
         except FileExistsError as exc:
             shutil.rmtree(tmp, ignore_errors=True)
             raise KbExistsError(f"kb already exists: {name}") from exc

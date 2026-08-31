@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import contextlib
 import sqlite3
+from collections.abc import Iterator
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -43,10 +45,15 @@ class Catalog:
         with self._connect() as conn:
             conn.executescript(_SCHEMA)
 
-    def _connect(self) -> sqlite3.Connection:
+    @contextlib.contextmanager
+    def _connect(self) -> Iterator[sqlite3.Connection]:
         conn = sqlite3.connect(self._path)
         conn.row_factory = sqlite3.Row
-        return conn
+        try:
+            with conn:
+                yield conn
+        finally:
+            conn.close()
 
     def _delete_rows(self, conn: sqlite3.Connection, doc_id: str) -> None:
         for table in ("document_authors", "document_keywords", "chunks", "documents"):

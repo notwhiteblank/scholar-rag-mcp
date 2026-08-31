@@ -18,4 +18,10 @@ jobs:
         with:
           python-version: "3.12"
       - run: uv sync --extra dev
+      - name: Exclude temp dirs from Windows Defender scanning
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          Set-MpPreference -ExclusionPath "$env:RUNNER_TEMP"
+          Set-MpPreference -ExclusionPath "$env:GITHUB_WORKSPACE"
       - run: uv run pytest tests -q -m "not e2e and not perf"

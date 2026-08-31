@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import contextlib
 import json
-import os
 import shutil
 import tempfile
 from collections.abc import Callable
@@ -11,6 +10,7 @@ from pathlib import Path
 from typing import Any
 
 from scholar_rag.core.errors import DocExistsError, PipelineStageError
+from scholar_rag.core.fsutil import move_dir
 from scholar_rag.core.types import AnnotatedDocument, MetadataResult
 from scholar_rag.ingest.annotate import stage_annotate
 from scholar_rag.ingest.chunk import stage_chunks
@@ -91,7 +91,7 @@ def _persist_disk(
     target = persist_root / doc_id
     if target.exists():
         raise OSError(f"document directory already exists: {target}")
-    os.replace(work_dir, target)
+    move_dir(work_dir, target)
 
 
 def _cleanup_partial(kb: str, catalog: Catalog, doc_id: str) -> None:

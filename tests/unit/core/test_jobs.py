@@ -25,7 +25,7 @@ def manager(tmp_path):
     instance.close()
 
 
-def _wait(manager, job_id, statuses, timeout=5.0):
+def _wait(manager, job_id, statuses, timeout=15.0):
     deadline = time.monotonic() + timeout
     while time.monotonic() < deadline:
         record = manager.get(job_id)

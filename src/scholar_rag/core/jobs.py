@@ -1,9 +1,10 @@
 from __future__ import annotations
 
+import contextlib
 import json
 import sqlite3
 import threading
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
 from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime
 from uuid import uuid4
@@ -41,10 +42,15 @@ class JobManager:
         workers = max(1, self._settings.job_workers)
         self._executor = ThreadPoolExecutor(max_workers=workers, thread_name_prefix="job")
 
-    def _connect(self) -> sqlite3.Connection:
+    @contextlib.contextmanager
+    def _connect(self) -> Iterator[sqlite3.Connection]:
         conn = sqlite3.connect(self._db_path)
         conn.row_factory = sqlite3.Row
-        return conn
+        try:
+            with conn:
+                yield conn
+        finally:
+            conn.close()
 
     def _get_row(self, job_id: str) -> sqlite3.Row | None:
         with self._connect() as conn:

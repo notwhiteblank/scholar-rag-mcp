@@ -2,6 +2,7 @@ import socket
 import tarfile
 import threading
 import time
+import zipfile
 from functools import partial
 from http.server import HTTPServer, SimpleHTTPRequestHandler
 
@@ -12,6 +13,7 @@ from qdrant_client import models
 from scholar_rag.core.errors import ServiceUnavailableError
 from scholar_rag.core.types import Chunk
 from scholar_rag.store.qdrant_manager import get_qdrant_manager, reset_qdrant_manager
+from scholar_rag.store.qdrant_platform import detect_asset
 from scholar_rag.store.vector_store import VectorStore
 
 pytestmark = pytest.mark.integration
@@ -199,11 +201,16 @@ def test_auto_spawn_manager_spawns_and_stops(monkeypatch, tmp_path, qdrant_insta
 def test_auto_download_then_spawn(monkeypatch, tmp_path, qdrant_instance):
     from scholar_rag.store import qdrant_platform
 
+    asset = detect_asset()
     release_dir = tmp_path / "release"
     release_dir.mkdir()
-    archive = release_dir / "qdrant-x86_64-unknown-linux-gnu.tar.gz"
-    with tarfile.open(archive, "w:gz") as handle:
-        handle.add(qdrant_instance["binary"], arcname="qdrant")
+    archive = release_dir / asset.asset_name
+    if asset.archive_kind == "zip":
+        with zipfile.ZipFile(archive, "w") as handle:
+            handle.write(qdrant_instance["binary"], arcname=asset.binary_name)
+    else:
+        with tarfile.open(archive, "w:gz") as handle:
+            handle.add(qdrant_instance["binary"], arcname=asset.binary_name)
     server = HTTPServer(("127.0.0.1", 0), partial(SimpleHTTPRequestHandler, directory=str(release_dir)))
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
@@ -223,7 +230,7 @@ def test_auto_download_then_spawn(monkeypatch, tmp_path, qdrant_instance):
         manager = get_qdrant_manager()
         client = manager.client()
         assert client.get_collections().collections == []
-        assert (tmp_path / "data" / "bin" / "qdrant").is_file()
+        assert (tmp_path / "data" / "bin" / asset.binary_name).is_file()
         process = manager._process
         assert process is not None
         assert process.poll() is None
