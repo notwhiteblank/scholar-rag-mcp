@@ -23,6 +23,7 @@ try:
     from scholar_rag.core.config import Settings
     from scholar_rag.core.errors import ConfigError
     from scholar_rag.models import get_chat_client, get_embedding_client, get_rerank_client
+    from scholar_rag.store.qdrant_platform import QDRANT_VERSION, detect_asset
 except ImportError:
     Settings = None  # type: ignore[assignment]
     ConfigError = Exception  # type: ignore[assignment]
@@ -30,10 +31,13 @@ except ImportError:
     get_chat_client = None  # type: ignore[assignment]
     get_embedding_client = None  # type: ignore[assignment]
     get_rerank_client = None  # type: ignore[assignment]
+    QDRANT_VERSION = "1.12.5"  # type: ignore[assignment]
+
+    def detect_asset(*args, **kwargs):  # type: ignore[no-redef]
+        raise RuntimeError("qdrant_platform unavailable")
 
 _VLLM_PORTS = (8101, 8102, 8103)
 _VLLM_ROLE = ("chat", "embed", "rerank")
-_QDRANT_VERSION = "1.12.5"
 
 
 class _Report:
@@ -93,7 +97,7 @@ def _client_health(report: _Report, settings: Settings, group: str) -> None:
         return
     if not base_url:
         report.add(False, f"{group} client ({backend})",
-                   f"{var} is empty; set it to a vLLM-compatible /v1 endpoint")
+                   f"{var} is empty; set it to an OpenAI-compatible /v1 endpoint")
         return
     factory = {"chat": get_chat_client, "embed": get_embedding_client,
                "rerank": get_rerank_client}[group]
@@ -105,8 +109,10 @@ def _client_health(report: _Report, settings: Settings, group: str) -> None:
     else:
         note = f"{base_url} responded on /models"
     if not healthy:
-        note = (f"{base_url} not healthy; check {var}, {group.upper()}_MODEL and "
-                "scripts/serve_models.sh")
+        hint = ("scripts/serve_models.sh" if sys.platform == "linux"
+                else "an OpenAI-compatible server (Ollama/LM Studio/llama.cpp); "
+                     "scripts/serve_models.sh is Linux-only")
+        note = f"{base_url} not healthy; check {var}, {group.upper()}_MODEL and {hint}"
     report.add(healthy, f"{group} client ({backend})", note)
 
 
@@ -182,8 +188,14 @@ def _qdrant_report(report: _Report, settings: Settings) -> None:
             return
         report.add(True, label, f"binary found: {path}")
     else:
+        try:
+            asset = detect_asset()
+        except Exception as exc:
+            report.add(False, label, str(exc))
+            return
         report.add(True, label, f"no SCHOLAR_RAG_QDRANT_BIN set; will look in "
-                   f"{settings.data_dir / 'bin'} or auto-download v{_QDRANT_VERSION}")
+                   f"{settings.data_dir / 'bin' / asset.binary_name} or auto-download "
+                   f"{asset.asset_name} (v{QDRANT_VERSION})")
     storage = settings.qdrant_storage_dir
     try:
         storage.mkdir(parents=True, exist_ok=True)
@@ -270,8 +282,13 @@ def main(argv: list[str] | None = None) -> int:
         report.add(True, "vllm ports", f"{parts} in use - assumed already running via "
                    "scripts/serve_models.sh (not an error)")
     else:
-        report.add(True, "vllm ports",
-                   "8101/8102/8103 free on 127.0.0.1 (start them with scripts/serve_models.sh)")
+        if sys.platform == "linux":
+            report.add(True, "vllm ports",
+                       "8101/8102/8103 free on 127.0.0.1 (start them with scripts/serve_models.sh)")
+        else:
+            report.add(True, "vllm ports",
+                       "8101/8102/8103 free on 127.0.0.1 (serve_models.sh is Linux-only; "
+                       "point *_BASE_URL at any OpenAI-compatible server)")
 
     report.print()
     print()

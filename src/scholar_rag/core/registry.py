@@ -63,7 +63,7 @@ class Registry:
             (tmp / _META_FILE).write_text(json.dumps(meta, ensure_ascii=False), encoding="utf-8")
             Catalog(tmp / _CATALOG_FILE)
             (tmp / _DOCUMENTS_DIR).mkdir()
-            os.rename(tmp, target)
+            os.replace(tmp, target)
         except FileExistsError as exc:
             shutil.rmtree(tmp, ignore_errors=True)
             raise KbExistsError(f"kb already exists: {name}") from exc

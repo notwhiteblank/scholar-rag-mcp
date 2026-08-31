@@ -91,7 +91,7 @@ def _persist_disk(
     target = persist_root / doc_id
     if target.exists():
         raise OSError(f"document directory already exists: {target}")
-    os.rename(work_dir, target)
+    os.replace(work_dir, target)
 
 
 def _cleanup_partial(kb: str, catalog: Catalog, doc_id: str) -> None:
