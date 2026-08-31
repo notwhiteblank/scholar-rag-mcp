@@ -144,7 +144,7 @@ class Catalog:
             total = conn.execute("SELECT COUNT(*) AS n FROM documents").fetchone()["n"]
             rows = conn.execute(
                 f"""SELECT {', '.join(_ROW_FIELDS)} FROM documents
-                    ORDER BY {_SORTS[sort]} LIMIT ? OFFSET ?""",
+                    ORDER BY {_SORTS[sort]}, doc_id LIMIT ? OFFSET ?""",
                 (page_size, offset),
             ).fetchall()
         return total, [dict(row) for row in rows]
@@ -191,7 +191,7 @@ class Catalog:
             total = conn.execute(f"SELECT COUNT(*) AS n FROM documents d WHERE {where}", params).fetchone()["n"]
             rows = conn.execute(
                 f"""SELECT d.doc_id, d.title, d.year, d.journal, d.first_author, d.doi, d.added_at
-                    FROM documents d WHERE {where} ORDER BY d.added_at DESC LIMIT ? OFFSET ?""",
+                    FROM documents d WHERE {where} ORDER BY d.added_at DESC, d.doc_id LIMIT ? OFFSET ?""",
                 (*params, page_size, offset),
             ).fetchall()
         return total, [dict(row) for row in rows]
