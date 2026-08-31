@@ -35,6 +35,10 @@ def _server_env(root: Path, qdrant_url: str, model_url: str) -> dict[str, str]:
         if key.startswith("SCHOLAR_RAG_"):
             del env[key]
     env["HOME"] = str(root)
+    env["USERPROFILE"] = str(root)
+    env["XDG_DATA_HOME"] = str(root / "xdg-data")
+    env["LOCALAPPDATA"] = str(root / "AppData" / "Local")
+    env.pop("APPDATA", None)
     env["SCHOLAR_RAG_DATA_DIR"] = str(root / "data")
     env["SCHOLAR_RAG_QDRANT_URL"] = qdrant_url
     env["SCHOLAR_RAG_EMBED_BACKEND"] = "api"

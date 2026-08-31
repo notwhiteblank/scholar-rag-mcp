@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import os
+import sys
 from pathlib import Path
 from typing import Any
 
@@ -9,24 +10,38 @@ from pydantic import Field, ValidationInfo, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from scholar_rag.core.errors import ConfigError
+from scholar_rag.core.migrate import migrate_legacy_data
 
 ENV_PREFIX = "SCHOLAR_RAG_"
 _MODEL_BACKENDS = frozenset({"api", "local"})
 _MINERU_BACKENDS = frozenset({"python", "cli", "api"})
-_DEFAULT_DATA_DIR = "~/.scholar-rag"
-_DEFAULT_QDRANT_STORAGE_DIR = "~/.local/share/scholar-rag/qdrant"
+
+
+def default_data_dir() -> Path:
+    if sys.platform == "win32":
+        base = os.environ.get("LOCALAPPDATA")
+        if not base:
+            base = str(Path.home() / "AppData" / "Local")
+        return Path(base) / "scholar-rag"
+    if sys.platform == "darwin":
+        return Path.home() / "Library" / "Application Support" / "scholar-rag"
+    xdg = os.environ.get("XDG_DATA_HOME")
+    base_path = Path(xdg) if xdg else Path.home() / ".local" / "share"
+    return base_path / "scholar-rag"
+
+
+def default_qdrant_storage_dir() -> Path:
+    return default_data_dir() / "qdrant-storage"
 
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_prefix=ENV_PREFIX, extra="ignore")
 
-    data_dir: Path = Field(default_factory=lambda: Path(_DEFAULT_DATA_DIR).expanduser())
+    data_dir: Path = Field(default_factory=default_data_dir)
     qdrant_url: str = ""
     qdrant_bin: str = ""
     qdrant_port: int = 6333
-    qdrant_storage_dir: Path = Field(
-        default_factory=lambda: Path(_DEFAULT_QDRANT_STORAGE_DIR).expanduser()
-    )
+    qdrant_storage_dir: Path = Field(default_factory=default_qdrant_storage_dir)
     chat_backend: str = "api"
     chat_base_url: str = ""
     chat_api_key: str = ""
@@ -75,9 +90,20 @@ class Settings(BaseSettings):
 
     @classmethod
     def load(cls) -> Settings:
+        cls._migrate_legacy()
         values = cls._read_config_file()
         values.update(cls._read_environment())
+        if "qdrant_storage_dir" not in values and "data_dir" in values:
+            data_dir = values["data_dir"]
+            base = Path(data_dir).expanduser() if isinstance(data_dir, str) else data_dir
+            values["qdrant_storage_dir"] = base / "qdrant-storage"
         return cls(**values)
+
+    @classmethod
+    def _migrate_legacy(cls) -> None:
+        if f"{ENV_PREFIX}DATA_DIR" in os.environ:
+            return
+        migrate_legacy_data(default_data_dir(), default_qdrant_storage_dir())
 
     @classmethod
     def _read_config_file(cls) -> dict[str, Any]:
@@ -111,7 +137,7 @@ class Settings(BaseSettings):
     @classmethod
     def _config_file_path(cls) -> Path:
         env_dir = os.environ.get(f"{ENV_PREFIX}DATA_DIR")
-        base = Path(env_dir or _DEFAULT_DATA_DIR).expanduser()
+        base = Path(env_dir).expanduser() if env_dir else default_data_dir()
         return base / "config.json"
 
     @classmethod

@@ -1,5 +1,6 @@
 import json
 import os
+import sys
 from collections.abc import Callable
 from pathlib import Path
 
@@ -26,12 +27,24 @@ def _home(*parts: str) -> Path:
     return Path.home().joinpath(*parts)
 
 
+def _expected_default_data_dir() -> Path:
+    if sys.platform == "win32":
+        base = os.environ.get("LOCALAPPDATA")
+        assert base, "LOCALAPPDATA must be set by the test isolation fixture"
+        return Path(base) / "scholar-rag"
+    if sys.platform == "darwin":
+        return Path.home() / "Library" / "Application Support" / "scholar-rag"
+    xdg = os.environ.get("XDG_DATA_HOME")
+    base = Path(xdg) if xdg else Path.home() / ".local" / "share"
+    return base / "scholar-rag"
+
+
 DEFAULTS: list[tuple[str, Callable[[], object]]] = [
-    ("data_dir", lambda: _home(".scholar-rag")),
+    ("data_dir", _expected_default_data_dir),
     ("qdrant_url", lambda: ""),
     ("qdrant_bin", lambda: ""),
     ("qdrant_port", lambda: 6333),
-    ("qdrant_storage_dir", lambda: _home(".local", "share", "scholar-rag", "qdrant")),
+    ("qdrant_storage_dir", lambda: _expected_default_data_dir() / "qdrant-storage"),
     ("chat_backend", lambda: "api"),
     ("chat_base_url", lambda: ""),
     ("chat_api_key", lambda: ""),
@@ -78,14 +91,14 @@ def test_env_vars_override_defaults(monkeypatch):
 
 
 def test_config_json_is_low_priority_source():
-    write_config(Path.home() / ".scholar-rag", {"CHAT_MODEL": "file-model", "job_workers": 3})
+    write_config(_expected_default_data_dir(), {"CHAT_MODEL": "file-model", "job_workers": 3})
     settings = Settings.load()
     assert settings.chat_model == "file-model"
     assert settings.job_workers == 3
 
 
 def test_env_vars_override_config_json(monkeypatch):
-    write_config(Path.home() / ".scholar-rag", {"CHAT_MODEL": "file-model"})
+    write_config(_expected_default_data_dir(), {"CHAT_MODEL": "file-model"})
     monkeypatch.setenv("SCHOLAR_RAG_CHAT_MODEL", "env-model")
     settings = Settings.load()
     assert settings.chat_model == "env-model"
@@ -103,7 +116,7 @@ def test_data_dir_priority_env_then_file_then_default(monkeypatch):
 
 def test_missing_config_json_falls_back_to_defaults():
     settings = Settings.load()
-    assert settings.data_dir == Path.home() / ".scholar-rag"
+    assert settings.data_dir == _expected_default_data_dir()
     assert settings.chat_model == "Qwen3.5-0.8B"
 
 
@@ -144,6 +157,6 @@ def test_invalid_backend_env_raises_config_error(monkeypatch, env_var, value):
 
 
 def test_invalid_backend_in_config_json_raises_config_error():
-    write_config(Path.home() / ".scholar-rag", {"RERANK_BACKEND": "bogus"})
+    write_config(_expected_default_data_dir(), {"RERANK_BACKEND": "bogus"})
     with pytest.raises(ConfigError):
         Settings.load()
