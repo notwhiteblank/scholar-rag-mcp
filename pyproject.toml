@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "scholar-rag-mcp"
-version = "0.2.0"
+version = "0.2.1"
 description = "Academic paper knowledge-base MCP tool with ingest, retrieval and chat over your document corpus"
 readme = "README.md"
 requires-python = ">=3.12"

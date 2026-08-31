@@ -217,7 +217,7 @@ python tests/perf/bench_query.py                          # query latency benchm
 ## Release notes
 
 For known limitations and upgrade guidance see
-`docs/handoffs/release-notes-v0.2.0.md`.
+`docs/handoffs/release-notes-v0.2.1.md`.
 
 Known constraints worth repeating:
 

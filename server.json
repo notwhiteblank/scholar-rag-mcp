@@ -3,12 +3,12 @@
   "name": "io.github.notwhiteblank/scholar-rag-mcp",
   "title": "Scholar RAG MCP",
   "description": "Academic paper knowledge-base MCP server: PDF ingest, vector search with reranking, KB management.",
-  "version": "0.2.0",
+      "version": "0.2.1",
   "packages": [
     {
       "registryType": "pypi",
       "identifier": "scholar-rag-mcp",
-      "version": "0.2.0",
+  "version": "0.2.1",
       "transport": {
         "type": "stdio"
       },
