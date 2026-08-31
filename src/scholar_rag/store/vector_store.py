@@ -1,15 +1,19 @@
 from __future__ import annotations
 
+import time
 import uuid
 from typing import Any
 
 from qdrant_client import QdrantClient, models
+from qdrant_client.http.exceptions import UnexpectedResponse
 
 from scholar_rag.core.errors import ServiceUnavailableError
 from scholar_rag.core.types import Chunk
 from scholar_rag.store.qdrant_manager import get_qdrant_manager
 
 _BATCH_SIZE = 256
+_DROP_ATTEMPTS = 8
+_DROP_RETRY_DELAY_SECONDS = 0.25
 _PAYLOAD_INDEXES: dict[str, models.PayloadSchemaType] = {
     "doc_id": models.PayloadSchemaType.KEYWORD,
     "section": models.PayloadSchemaType.KEYWORD,
@@ -115,7 +119,14 @@ class VectorStore:
         return total
 
     def drop(self) -> None:
-        self._client.delete_collection(collection_name=self._collection)
+        for attempt in range(_DROP_ATTEMPTS):
+            try:
+                self._client.delete_collection(collection_name=self._collection)
+                return
+            except UnexpectedResponse as exc:
+                if attempt + 1 >= _DROP_ATTEMPTS or "Access is denied" not in str(exc):
+                    raise
+                time.sleep(_DROP_RETRY_DELAY_SECONDS)
 
     def count(self) -> int:
         return self._client.count(collection_name=self._collection).count
