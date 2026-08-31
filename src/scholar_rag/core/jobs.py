@@ -163,4 +163,4 @@ class JobManager:
             return cursor.rowcount
 
     def close(self) -> None:
-        self._executor.shutdown(wait=False)
+        self._executor.shutdown(wait=True)
