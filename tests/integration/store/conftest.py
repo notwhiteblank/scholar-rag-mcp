@@ -2,19 +2,18 @@ import os
 import shutil
 import socket
 import subprocess
-import tarfile
+import sys
 import time
-import urllib.request
 from pathlib import Path
 
 import httpx
 import pytest
 
+from scholar_rag.store.qdrant_platform import detect_asset, fetch_binary
+
 _REPO_ROOT = Path(__file__).resolve().parents[3]
-_SPIKE_BINARY = _REPO_ROOT / "spike" / "out" / "qdrant" / "qdrant"
-_DOWNLOAD_URL = (
-    "https://github.com/qdrant/qdrant/releases/download/"
-    "v1.12.5/qdrant-x86_64-unknown-linux-gnu.tar.gz"
+_SPIKE_BINARY = _REPO_ROOT / "spike" / "out" / "qdrant" / (
+    "qdrant.exe" if os.name == "nt" else "qdrant"
 )
 _READY_TIMEOUT = 60.0
 
@@ -31,18 +30,7 @@ def _resolve_binary(cache_dir: Path) -> Path:
         return Path(configured)
     if _SPIKE_BINARY.is_file():
         return _SPIKE_BINARY
-    cached = cache_dir / "qdrant"
-    if cached.is_file():
-        return cached
-    cache_dir.mkdir(parents=True, exist_ok=True)
-    archive = cache_dir / "qdrant.tar.gz"
-    urllib.request.urlretrieve(_DOWNLOAD_URL, archive)
-    with tarfile.open(archive, "r:gz") as handle:
-        member = next(m for m in handle.getmembers() if Path(m.name).name == "qdrant")
-        handle.extract(member, cache_dir)
-        extracted = cache_dir / Path(member.name).name
-        extracted.chmod(0o755)
-    return extracted
+    return fetch_binary(cache_dir)
 
 
 def _wait_ready(url: str, process: subprocess.Popen) -> None:
@@ -64,20 +52,25 @@ def _wait_ready(url: str, process: subprocess.Popen) -> None:
 def qdrant_instance(tmp_path_factory) -> dict:
     root = tmp_path_factory.mktemp("qdrant-instance")
     binary = _resolve_binary(root / "bin-cache")
-    bin_path = root / "qdrant"
+    bin_path = root / detect_asset().binary_name
     shutil.copy2(binary, bin_path)
     port = _free_port()
     storage = root / "storage"
     config = root / "qdrant.yaml"
+    quoted_storage = str(storage).replace("\\", "\\\\").replace('"', '\\"')
     config.write_text(
-        f"storage:\n  storage_path: {storage}\nservice:\n  http_port: {port}\n",
+        f'storage:\n  storage_path: "{quoted_storage}"\nservice:\n  http_port: {port}\n',
         encoding="utf-8",
     )
+    popen_kwargs: dict[str, int] = {}
+    if sys.platform == "win32":
+        popen_kwargs["creationflags"] = subprocess.CREATE_NO_WINDOW
     process = subprocess.Popen(
         [str(bin_path), "--config-path", str(config), "--disable-telemetry"],
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
         cwd=str(root),
+        **popen_kwargs,
     )
     url = f"http://127.0.0.1:{port}"
     try:

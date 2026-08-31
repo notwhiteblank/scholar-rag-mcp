@@ -3,9 +3,8 @@ from __future__ import annotations
 import atexit
 import contextlib
 import os
-import shutil
 import subprocess
-import tarfile
+import sys
 import tempfile
 import threading
 import time
@@ -17,12 +16,8 @@ from qdrant_client import QdrantClient
 from scholar_rag.core.config import Settings
 from scholar_rag.core.errors import ServiceUnavailableError
 from scholar_rag.store.layout import bin_dir
+from scholar_rag.store.qdrant_platform import QDRANT_VERSION, detect_asset, fetch_binary
 
-QDRANT_VERSION = "1.12.5"
-_QDRANT_RELEASE_URL = (
-    "https://github.com/qdrant/qdrant/releases/download/"
-    f"v{QDRANT_VERSION}/qdrant-x86_64-unknown-linux-gnu.tar.gz"
-)
 _READY_TIMEOUT_SECONDS = 30.0
 _READY_INTERVAL_SECONDS = 0.5
 
@@ -57,46 +52,28 @@ class QdrantManager:
             if not path.is_file():
                 raise ServiceUnavailableError(f"QDRANT_BIN not found: {settings.qdrant_bin}")
             return path
-        target = bin_dir(settings) / "qdrant"
+        target = bin_dir(settings) / detect_asset().binary_name
         if target.is_file():
             return target
         return self._download_binary(target)
 
     def _download_binary(self, target: Path) -> Path:
-        target.parent.mkdir(parents=True, exist_ok=True)
-        tmp_dir = Path(tempfile.mkdtemp(prefix="qdrant-download-", dir=str(target.parent)))
-        archive = tmp_dir / "qdrant.tar.gz"
-        try:
-            with httpx.stream("GET", _QDRANT_RELEASE_URL, follow_redirects=True, timeout=120) as response:
-                response.raise_for_status()
-                with open(archive, "wb") as handle:
-                    for chunk in response.iter_bytes():
-                        handle.write(chunk)
-            with tarfile.open(archive, "r:gz") as archive_file:
-                archive_file.extractall(tmp_dir, filter="data")
-            extracted = tmp_dir / "qdrant"
-            if not extracted.is_file() or not os.access(extracted, os.X_OK):
-                extracted.chmod(0o755)
-            os.replace(extracted, target)
-            target.chmod(0o755)
-            return target
-        except (httpx.HTTPError, tarfile.TarError, OSError) as exc:
-            raise ServiceUnavailableError(
-                f"failed to download qdrant v{QDRANT_VERSION} from {_QDRANT_RELEASE_URL}: {exc}"
-            ) from exc
-        finally:
-            shutil.rmtree(tmp_dir, ignore_errors=True)
+        return fetch_binary(target.parent)
 
     def _start(self, binary: Path) -> None:
         settings = self._settings
         storage = settings.qdrant_storage_dir
         storage.mkdir(parents=True, exist_ok=True)
         config_path = self._write_runtime_config(storage, settings.qdrant_port)
+        creationflags = 0
+        if sys.platform == "win32":
+            creationflags = subprocess.CREATE_NO_WINDOW
         self._process = subprocess.Popen(
             [str(binary), "--config-path", str(config_path), "--disable-telemetry"],
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
             cwd=str(storage),
+            creationflags=creationflags,
         )
         url = f"http://127.0.0.1:{settings.qdrant_port}"
         deadline = time.monotonic() + _READY_TIMEOUT_SECONDS

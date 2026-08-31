@@ -35,7 +35,9 @@ from scholar_rag.store.vector_store import VectorStore, _point_id
 
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 _REPORT_PATH = _REPO_ROOT / "docs" / "perf-report.md"
-_SPIKE_BINARY = _REPO_ROOT / "spike" / "out" / "qdrant" / "qdrant"
+_SPIKE_BINARY = _REPO_ROOT / "spike" / "out" / "qdrant" / (
+    "qdrant.exe" if os.name == "nt" else "qdrant"
+)
 _DIM = 2048
 _DOCS = 2000
 _CHUNKS_PER_DOC = 50
@@ -60,7 +62,7 @@ def _now_iso() -> str:
 
 def setup_env(real_embed: bool) -> tuple[Path, Path]:
     """Point SCHOLAR_RAG_* at throwaway local paths and return (root, data_dir)."""
-    root = Path(tempfile.mkdtemp(prefix="scholar-bench-", dir="/tmp"))
+    root = Path(tempfile.mkdtemp(prefix="scholar-bench-"))
     storage = root / "qdrant"
     data_dir = root / "data"
     os.environ["SCHOLAR_RAG_DATA_DIR"] = str(data_dir)

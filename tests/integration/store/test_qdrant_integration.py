@@ -197,7 +197,7 @@ def test_auto_spawn_manager_spawns_and_stops(monkeypatch, tmp_path, qdrant_insta
 
 
 def test_auto_download_then_spawn(monkeypatch, tmp_path, qdrant_instance):
-    from scholar_rag.store import qdrant_manager
+    from scholar_rag.store import qdrant_platform
 
     release_dir = tmp_path / "release"
     release_dir.mkdir()
@@ -215,9 +215,9 @@ def test_auto_download_then_spawn(monkeypatch, tmp_path, qdrant_instance):
         monkeypatch.setenv("SCHOLAR_RAG_QDRANT_PORT", str(port))
         monkeypatch.setenv("SCHOLAR_RAG_QDRANT_STORAGE_DIR", str(storage))
         monkeypatch.setattr(
-            qdrant_manager,
-            "_QDRANT_RELEASE_URL",
-            f"http://127.0.0.1:{server.server_port}/{archive.name}",
+            qdrant_platform,
+            "release_url",
+            lambda asset: f"http://127.0.0.1:{server.server_port}/{archive.name}",
         )
         reset_qdrant_manager()
         manager = get_qdrant_manager()
