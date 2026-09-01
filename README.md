@@ -31,17 +31,29 @@ run on OpenAI-compatible model services (e.g. vLLM) with in-process fallbacks.
 
 ## Installation
 
-Requires [pixi](https://pixi.sh). From the repository root:
-
 scholar-rag-mcp runs on Linux x64, Windows x64 and macOS (Intel and Apple Silicon).
-The pixi environments are locked for all four targets; the Qdrant binary used for
-auto-launch is downloaded per platform on first use.
+It is published on PyPI; the standard way to run it is with
+[uv](https://docs.astral.sh/uv/) (a suitable Python 3.12 is fetched automatically):
+
+```bash
+uvx scholar-rag-mcp             # download and start the MCP server (stdio)
+```
+
+No repository checkout is needed. Configure model endpoints and storage with
+`SCHOLAR_RAG_*` environment variables or `<data_dir>/config.json` (see
+`.env.example`); the Qdrant binary used for auto-launch is downloaded per
+platform on first use.
+
+### From source (development)
+
+Requires [pixi](https://pixi.sh). From the repository root:
 
 ```bash
 pixi install                      # installs the default environment
 ```
 
-The project defines three pixi environments, each serving a different purpose:
+The pixi environments are locked for all four supported targets. The project
+defines three pixi environments, each serving a different purpose:
 
 | Environment | Purpose |
 |---|---|
@@ -115,11 +127,10 @@ embedding model later requires a new kb.
 
 ## MCP client setup
 
-Start the server entry point directly to make sure it runs:
-
-```bash
-pixi run scholar-rag-mcp
-```
+Point your MCP client at the `uvx` entry point and configure the model endpoints
+in the `env` block (any OpenAI-compatible server works; see Model deployment).
+To check that the server starts, run `uvx scholar-rag-mcp` in a terminal - it
+waits for an MCP client on stdio (Ctrl+C to exit).
 
 ### Claude (Claude Desktop / claude CLI)
 
@@ -127,8 +138,16 @@ pixi run scholar-rag-mcp
 {
   "mcpServers": {
     "scholar-rag-mcp": {
-      "command": "pixi",
-      "args": ["run", "scholar-rag-mcp"]
+      "command": "uvx",
+      "args": ["scholar-rag-mcp"],
+      "env": {
+        "SCHOLAR_RAG_CHAT_BASE_URL": "http://127.0.0.1:8101/v1",
+        "SCHOLAR_RAG_CHAT_MODEL": "Qwen3.5-0.8B",
+        "SCHOLAR_RAG_EMBED_BASE_URL": "http://127.0.0.1:8102/v1",
+        "SCHOLAR_RAG_EMBED_MODEL": "jina-embeddings-v5-text-small",
+        "SCHOLAR_RAG_RERANK_BASE_URL": "http://127.0.0.1:8103/v1",
+        "SCHOLAR_RAG_RERANK_MODEL": "jina-reranker-v3.5"
+      }
     }
   }
 }
@@ -142,11 +161,22 @@ pixi run scholar-rag-mcp
   "mcp": {
     "scholar-rag-mcp": {
       "type": "local",
-      "command": ["pixi", "run", "scholar-rag-mcp"]
+      "command": ["uvx", "scholar-rag-mcp"],
+      "environment": {
+        "SCHOLAR_RAG_CHAT_BASE_URL": "http://127.0.0.1:8101/v1",
+        "SCHOLAR_RAG_CHAT_MODEL": "Qwen3.5-0.8B",
+        "SCHOLAR_RAG_EMBED_BASE_URL": "http://127.0.0.1:8102/v1",
+        "SCHOLAR_RAG_EMBED_MODEL": "jina-embeddings-v5-text-small",
+        "SCHOLAR_RAG_RERANK_BASE_URL": "http://127.0.0.1:8103/v1",
+        "SCHOLAR_RAG_RERANK_MODEL": "jina-reranker-v3.5"
+      }
     }
   }
 }
 ```
+
+Running from a source checkout instead: use `pixi run scholar-rag-mcp` as the
+command (from the repository root) and set the same variables in your shell.
 
 ## Tools
 
