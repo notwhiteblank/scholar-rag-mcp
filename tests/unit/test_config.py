@@ -139,9 +139,30 @@ def test_validate_runtime_passes_when_base_urls_set():
     settings.validate_runtime()
 
 
-def test_validate_runtime_passes_when_backends_are_local():
-    settings = Settings(chat_backend="local", embed_backend="local", rerank_backend="local")
-    settings.validate_runtime()
+def test_api_model_backend_is_accepted():
+    settings = Settings(
+        chat_backend="api", embed_backend="api", rerank_backend="api"
+    )
+    assert settings.chat_backend == "api"
+    assert settings.embed_backend == "api"
+    assert settings.rerank_backend == "api"
+
+
+@pytest.mark.parametrize(
+    "env_var",
+    [
+        "SCHOLAR_RAG_CHAT_BACKEND",
+        "SCHOLAR_RAG_EMBED_BACKEND",
+        "SCHOLAR_RAG_RERANK_BACKEND",
+    ],
+)
+def test_local_model_backend_rejected_with_migration_message(monkeypatch, env_var):
+    monkeypatch.setenv(env_var, "local")
+    with pytest.raises(ConfigError) as exc_info:
+        Settings()
+    message = str(exc_info.value)
+    assert "removed" in message
+    assert "api" in message
 
 
 @pytest.mark.parametrize("env_var,value", [

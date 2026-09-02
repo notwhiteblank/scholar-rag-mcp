@@ -13,7 +13,7 @@ from scholar_rag.core.errors import ConfigError
 from scholar_rag.core.migrate import migrate_legacy_data
 
 ENV_PREFIX = "SCHOLAR_RAG_"
-_MODEL_BACKENDS = frozenset({"api", "local"})
+_MODEL_BACKENDS = frozenset({"api"})
 _MINERU_BACKENDS = frozenset({"python", "cli", "api"})
 
 
@@ -77,7 +77,11 @@ class Settings(BaseSettings):
     def _validate_model_backend(cls, value: str, info: ValidationInfo) -> str:
         if value not in _MODEL_BACKENDS:
             allowed = ", ".join(sorted(_MODEL_BACKENDS))
-            raise ConfigError(f"invalid {info.field_name}: {value!r} (allowed: {allowed})")
+            raise ConfigError(
+                f"invalid {info.field_name}: {value!r} (allowed: {allowed}); "
+                "local backend was removed in v0.3.0 — serve models via vLLM/Ollama/LM Studio "
+                "and set the matching SCHOLAR_RAG_*_BASE_URL (api backend)"
+            )
         return value
 
     @field_validator("mineru_backend")

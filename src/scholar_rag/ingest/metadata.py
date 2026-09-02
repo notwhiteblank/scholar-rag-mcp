@@ -229,9 +229,7 @@ def _try_enrich_abstract(result: MetadataResult) -> MetadataResult:
 
 
 def _chat_configured(settings: Settings) -> bool:
-    if settings.chat_backend == "api":
-        return bool(settings.chat_base_url)
-    return True
+    return bool(settings.chat_base_url)
 
 
 def _generate_keywords(result: MetadataResult, settings: Settings) -> tuple[str, ...]:

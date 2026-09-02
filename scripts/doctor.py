@@ -78,23 +78,7 @@ def _port_free(port: int) -> bool:
 def _client_health(report: _Report, settings: Settings, group: str) -> None:
     backend = getattr(settings, f"{group}_backend")
     base_url = getattr(settings, f"{group}_base_url")
-    model = getattr(settings, f"{group}_model")
     var = f"SCHOLAR_RAG_{group.upper()}_BASE_URL"
-    if backend != "api":
-        path = Path(model).expanduser()
-        if not path.is_dir():
-            report.add(False, f"{group} client ({backend})",
-                       f"model path not found: {model!r}")
-            return
-        for module in ("torch", "transformers") if group == "chat" else ("torch",):
-            if importlib.util.find_spec(module) is None:
-                report.add(False, f"{group} client ({backend})",
-                           f"dependency {module!r} not importable; use the "
-                           "local-models pixi environment")
-                return
-        report.add(True, f"{group} client ({backend})",
-                   f"model {model!r}; full load deferred to runtime")
-        return
     if not base_url:
         report.add(False, f"{group} client ({backend})",
                    f"{var} is empty; set it to an OpenAI-compatible /v1 endpoint")

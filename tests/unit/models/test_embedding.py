@@ -1,7 +1,6 @@
 import json
 import sys
 import time
-import types
 
 import httpx
 import pytest
@@ -162,63 +161,6 @@ def test_embed_out_of_range_index_raises(client):
     assert route.call_count == 1
 
 
-FAKE_EMBED_SCRIPT = """
-class _Tensor:
-    def __init__(self, rows):
-        self._rows = rows
-
-    def cpu(self):
-        return self
-
-    def float(self):
-        return self
-
-    def tolist(self):
-        return self._rows
-
-
-class Qwen3VLEmbedder:
-    def __init__(self, model_name_or_path=None, **kwargs):
-        self._seen = 0
-
-    def process(self, inputs, normalize=True):
-        rows = []
-        for item in inputs:
-            rows.append([float(self._seen), 5.0])
-            self._seen += 1
-        return _Tensor(rows)
-"""
-
-
-@pytest.fixture
-def fake_local_model(tmp_path):
-    scripts = tmp_path / "scripts"
-    scripts.mkdir()
-    (scripts / "qwen3_vl_embedding.py").write_text(FAKE_EMBED_SCRIPT)
-    return tmp_path
-
-
-def test_local_embed_order_and_batch_keep(monkeypatch, fake_local_model):
-    monkeypatch.setitem(sys.modules, "torch", types.SimpleNamespace(float16=1))
-    client = EmbeddingClient(backend="local", model=str(fake_local_model))
-    result = client.embed([f"s{i}" for i in range(10)], batch_size=3)
-    assert len(result) == 10
-    assert [row[0] for row in result] == [float(i) for i in range(10)]
-    assert all(row[1] == 5.0 for row in result)
-
-
-def test_local_embed_empty_returns_empty(monkeypatch, fake_local_model):
-    monkeypatch.setitem(sys.modules, "torch", types.SimpleNamespace(float16=1))
-    client = EmbeddingClient(backend="local", model=str(fake_local_model))
-    assert client.embed([]) == []
-
-
-def test_local_missing_script_raises_service_unavailable(tmp_path):
-    client = EmbeddingClient(backend="local", model=str(tmp_path))
-    with pytest.raises(ServiceUnavailableError):
-        client.embed(["t0"])
-
-
 def test_api_client_never_imports_torch(monkeypatch, client):
     monkeypatch.setitem(sys.modules, "torch", None)
     with respx.mock:
@@ -229,6 +171,6 @@ def test_api_client_never_imports_torch(monkeypatch, client):
         assert client.health() is True
 
 
-def test_local_construction_does_not_import_torch(monkeypatch, fake_local_model):
-    monkeypatch.setitem(sys.modules, "torch", None)
-    EmbeddingClient(backend="local", model=str(fake_local_model))
+def test_construction_with_defaults():
+    client = EmbeddingClient(base_url=BASE_URL, api_key="k")
+    assert client.embed([]) == []

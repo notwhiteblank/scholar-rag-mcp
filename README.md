@@ -2,7 +2,7 @@
 
 <!-- mcp-name: io.github.notwhiteblank/scholar-rag-mcp -->
 
-> **Status: preview release (v0.2.1).** Interfaces and storage layout may change in future versions.
+> **Status: preview release (v0.3.0).** Interfaces and storage layout may change in future versions.
 
 **scholar-rag-mcp** is a publishable academic-paper knowledge-base MCP tool. Point it at a
 folder of PDFs and it ingests each paper through a real parsing pipeline (MinerU), normalizes
@@ -10,7 +10,7 @@ metadata, annotates section structure, chunks and embeds the text, and stores ev
 Qdrant - after which an agent (or you) can semantically search chunks, run PubMed-style
 document queries, read full text section by section, add/remove single papers, and manage
 knowledge bases - all through 11 MCP tools over stdio. Embedding, annotation and re-ranking
-run on OpenAI-compatible model services (e.g. vLLM) with in-process fallbacks.
+run on OpenAI-compatible model services (e.g. vLLM).
 
 ## Features
 
@@ -46,6 +46,28 @@ No repository checkout is needed. Configure model endpoints and storage with
 `.env.example`); the Qdrant binary used for auto-launch is downloaded per
 platform on first use.
 
+### One-click install / uninstall
+
+```bash
+uvx scholar-rag-mcp install              # install via uv and register MCP clients
+scholar-rag-mcp uninstall                # unregister clients and remove the package
+```
+
+`uvx scholar-rag-mcp install` installs the package via `uv tool install` and interactively
+walks through the six model-endpoint settings (`chat`/`embed`/`rerank` base URLs and model
+names), using the defaults listed in Minimal environment unless a `SCHOLAR_RAG_*` value or a
+`--chat-base-url` / `--chat-model` / `--embed-base-url` / `--embed-model` /
+`--rerank-base-url` / `--rerank-model` flag is given; `--yes` accepts all defaults without
+prompting. It then detects the four supported MCP clients (Claude Desktop, Claude Code,
+opencode, Codex) and registers the tool by merging the `scholar-rag-mcp` entry into their
+user-level configs, touching only that entry; pass `--client <name>` to register a single
+client. Configs that cannot be parsed (e.g. JSON with comments) are left untouched and a
+manual snippet is printed instead.
+
+`scholar-rag-mcp uninstall` removes the `scholar-rag-mcp` entry from the detected clients and
+runs `uv tool uninstall`; the knowledge-base data directory is kept. `--purge` additionally
+deletes the data directory after explicit confirmation (skip the prompt with `--yes`).
+
 ### From source (development)
 
 Requires [pixi](https://pixi.sh). From the repository root:
@@ -55,13 +77,12 @@ pixi install                      # installs the default environment
 ```
 
 The pixi environments are locked for all four supported targets. The project
-defines three pixi environments, each serving a different purpose:
+defines two pixi environments, each serving a different purpose:
 
 | Environment | Purpose |
 |---|---|
 | `default` | Core runtime + dev tooling (pytest/ruff/mypy). Run the MCP server and all scripts here. |
 | `mineru` | Adds MinerU (`==3.4.5`) plus its full runtime stack (pinned `transformers<5`, torch, onnxruntime, shapely, ...). Use for PDF parsing and the e2e smoke test. |
-| `local-models` | Adds torch/transformers for in-process local model backends (falls back to downloading model weights on first use). |
 
 Verify your environment with the built-in doctor:
 
@@ -93,9 +114,9 @@ short name equal to the directory basename, so the client settings must use that
 `.env.example` accordingly. Ports (`CHAT_PORT`/`EMBED_PORT`/`RERANK_PORT`) and GPU ids remain
 optional with working defaults.
 
-The script pins the exact vLLM flags verified for these models (the Jina embed model needs
-`--trust-remote-code` for its custom code; the reranker runs with its default task, no extra
-flags). Model load takes several minutes; the script polls health until all three answer.
+The script passes the vLLM flags verified for the default model set, notably
+`--trust-remote-code`, which all three models require on the pinned vLLM (0.27.1). Model load
+takes several minutes; the script polls health until all three answer.
 
 `scripts/serve_models.sh` is **Linux-only** (bash + CUDA + vLLM; vLLM has no Windows
 support). On Windows/macOS point the `*_BASE_URL` settings at any OpenAI-compatible
@@ -249,6 +270,7 @@ python tests/perf/bench_query.py                          # query latency benchm
 ## Release notes
 
 For known limitations and upgrade guidance see
+`docs/handoffs/release-notes-v0.3.0.md` and
 `docs/handoffs/release-notes-v0.2.1.md`.
 
 Known constraints worth repeating:

@@ -59,6 +59,7 @@ CUDA_VISIBLE_DEVICES="${CHAT_GPU}" "${PIXI}" run -m "${MANIFEST}" vllm serve \
   --port "${CHAT_PORT}" \
   --max-model-len 4096 \
   --gpu-memory-utilization 0.77 \
+  --trust-remote-code \
   --served-model-name "${CHAT_NAME}" >"${CHAT_LOG}" 2>&1 &
 CHAT_PID=$!
 health "${CHAT_PORT}" "${CHAT_LOG}" || true
@@ -82,6 +83,7 @@ CUDA_VISIBLE_DEVICES="${RERANK_GPU}" "${PIXI}" run -m "${MANIFEST}" vllm serve \
   --port "${RERANK_PORT}" \
   --max-model-len 8192 \
   --gpu-memory-utilization 0.85 \
+  --trust-remote-code \
   --served-model-name "${RERANK_NAME}" >"${RERANK_LOG}" 2>&1 &
 RERANK_PID=$!
 health "${RERANK_PORT}" "${RERANK_LOG}" || true

@@ -20,7 +20,6 @@ def get_chat_client() -> ChatClient:
         if _chat_client is None:
             settings = Settings.load()
             _chat_client = ChatClient(
-                backend=settings.chat_backend,
                 base_url=settings.chat_base_url,
                 api_key=settings.chat_api_key,
                 model=settings.chat_model,
@@ -36,7 +35,6 @@ def get_embedding_client() -> EmbeddingClient:
         if _embedding_client is None:
             settings = Settings.load()
             _embedding_client = EmbeddingClient(
-                backend=settings.embed_backend,
                 base_url=settings.embed_base_url,
                 api_key=settings.embed_api_key,
                 model=settings.embed_model,
@@ -52,7 +50,6 @@ def get_rerank_client() -> RerankClient:
         if _rerank_client is None:
             settings = Settings.load()
             _rerank_client = RerankClient(
-                backend=settings.rerank_backend,
                 base_url=settings.rerank_base_url,
                 api_key=settings.rerank_api_key,
                 model=settings.rerank_model,

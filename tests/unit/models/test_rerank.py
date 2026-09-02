@@ -1,7 +1,6 @@
 import json
 import sys
 import time
-import types
 
 import httpx
 import pytest
@@ -189,50 +188,6 @@ def test_rerank_empty_returns_empty(client):
     assert client.rerank("q", []) == []
 
 
-FAKE_RERANK_SCRIPT = """
-class Qwen3VLReranker:
-    def __init__(self, model_name_or_path=None, **kwargs):
-        self._seen = 0
-
-    def process(self, inputs):
-        scores = []
-        for _doc in inputs["documents"]:
-            if self._seen % 2 == 0:
-                scores.append(0.8)
-            else:
-                scores.append(0.2)
-            self._seen += 1
-        return scores
-"""
-
-
-@pytest.fixture
-def fake_local_model(tmp_path):
-    scripts = tmp_path / "scripts"
-    scripts.mkdir()
-    (scripts / "qwen3_vl_reranker.py").write_text(FAKE_RERANK_SCRIPT)
-    return tmp_path
-
-
-def test_local_rerank_order_kept(monkeypatch, fake_local_model):
-    monkeypatch.setitem(sys.modules, "torch", types.SimpleNamespace(float16=1))
-    client = RerankClient(backend="local", model=str(fake_local_model))
-    result = client.rerank("q", [f"d{i}" for i in range(5)], batch_size=2)
-    assert result == [0.8, 0.2, 0.8, 0.2, 0.8]
-
-
-def test_local_rerank_empty_returns_empty(monkeypatch, fake_local_model):
-    monkeypatch.setitem(sys.modules, "torch", types.SimpleNamespace(float16=1))
-    client = RerankClient(backend="local", model=str(fake_local_model))
-    assert client.rerank("q", []) == []
-
-
-def test_local_missing_script_raises_service_unavailable(tmp_path):
-    client = RerankClient(backend="local", model=str(tmp_path))
-    with pytest.raises(ServiceUnavailableError):
-        client.rerank("q", ["d0"])
-
-
 def test_api_client_never_imports_torch(monkeypatch, client):
     monkeypatch.setitem(sys.modules, "torch", None)
     with respx.mock:
@@ -243,6 +198,6 @@ def test_api_client_never_imports_torch(monkeypatch, client):
         assert client.health() is True
 
 
-def test_local_construction_does_not_import_torch(monkeypatch, fake_local_model):
-    monkeypatch.setitem(sys.modules, "torch", None)
-    RerankClient(backend="local", model=str(fake_local_model))
+def test_construction_with_defaults():
+    client = RerankClient(base_url=BASE_URL, api_key="k")
+    assert client.rerank("q", []) == []

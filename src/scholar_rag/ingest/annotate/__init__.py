@@ -44,9 +44,7 @@ def stage_annotate(cleaned: str) -> AnnotatedDocument:
 
 
 def _chat_configured(settings: Settings) -> bool:
-    if settings.chat_backend == "api":
-        return bool(settings.chat_base_url)
-    return True
+    return bool(settings.chat_base_url)
 
 
 def _resolver_cache_dir(settings: Settings) -> Path:

@@ -38,6 +38,8 @@ STUB_MODULES = [
     "scholar_rag.server.main",
     "scholar_rag.server.tools",
     "scholar_rag.server.schemas",
+    "scholar_rag.cli",
+    "scholar_rag.cli.setup",
 ]
 
 
@@ -48,7 +50,7 @@ def test_module_imports(module):
 
 def test_package_has_no_undocumented_modules():
     actual = sorted(m.name for m in pkgutil.iter_modules(scholar_rag.__path__))
-    assert actual == ["core", "ingest", "models", "retrieve", "server", "services", "store"]
+    assert actual == ["cli", "core", "ingest", "models", "retrieve", "server", "services", "store"]
 
 
 def test_server_registers_eleven_tools():

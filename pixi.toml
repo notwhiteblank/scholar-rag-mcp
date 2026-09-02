@@ -72,28 +72,9 @@ safetensors = ">=0.4.0,<1"
 six = "*"
 transformers = "<5"
 
-[feature.local-models.dependencies]
-python = "3.12.*"
-
-[feature.local-models.target.linux-64.pypi-dependencies]
-torch = "*"
-transformers = "*"
-accelerate = "*"
-
-[feature.local-models.target.win-64.pypi-dependencies]
-torch = "*"
-transformers = "*"
-accelerate = "*"
-
-[feature.local-models.target.osx-arm64.pypi-dependencies]
-torch = "*"
-transformers = "*"
-accelerate = "*"
-
 [environments]
 default = { features = ["dev"] }
 mineru = { features = ["mineru", "dev"] }
-local-models = { features = ["local-models"] }
 
 [tasks]
 lint = "ruff check src tests"

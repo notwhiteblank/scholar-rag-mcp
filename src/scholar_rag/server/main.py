@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import importlib.metadata
+import sys
 from typing import Any
 
 from scholar_rag.server import tools
@@ -46,6 +47,18 @@ def build_server() -> Any:
 
 
 def main() -> None:
+    args = sys.argv[1:]
+    if args and args[0] in ("install", "uninstall"):
+        from scholar_rag.cli.setup import setup_main
+
+        sys.exit(setup_main(args))
+    if args:
+        from scholar_rag.cli.setup import USAGE
+
+        print(USAGE, end="")
+        if args[0] in ("--help", "-h"):
+            return
+        sys.exit(2)
     build_server().run()
 
 
