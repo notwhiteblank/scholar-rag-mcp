@@ -107,7 +107,9 @@ def config_path(client: str) -> Path:
                 / "claude_desktop_config.json"
             )
         if sys.platform == "win32":
-            return Path(os.environ["APPDATA"]) / "Claude" / "claude_desktop_config.json"
+            appdata = os.environ.get("APPDATA")
+            base = Path(appdata) if appdata else Path.home() / "AppData" / "Roaming"
+            return base / "Claude" / "claude_desktop_config.json"
         return Path.home() / ".config" / "Claude" / "claude_desktop_config.json"
     if client == "claude-code":
         return Path.home() / ".claude.json"

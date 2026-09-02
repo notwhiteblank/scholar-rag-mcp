@@ -46,6 +46,14 @@ def test_config_path_claude_desktop(platform, tmp_path, monkeypatch):
     assert config_path("claude-desktop") == expected
 
 
+def test_config_path_claude_desktop_win32_without_appdata(tmp_path, monkeypatch):
+    _fake_home(tmp_path, monkeypatch)
+    monkeypatch.delenv("APPDATA", raising=False)
+    monkeypatch.setattr(sys, "platform", "win32")
+    expected = tmp_path / "AppData" / "Roaming" / "Claude" / "claude_desktop_config.json"
+    assert config_path("claude-desktop") == expected
+
+
 def test_config_path_claude_code(tmp_path, monkeypatch):
     _fake_home(tmp_path, monkeypatch)
     assert config_path("claude-code") == tmp_path / ".claude.json"
