@@ -2,7 +2,7 @@
 
 <!-- mcp-name: io.github.notwhiteblank/scholar-rag-mcp -->
 
-> **Status: preview release (v0.3.0).** Interfaces and storage layout may change in future versions.
+> **Status: preview release (v0.4.0).** Interfaces and storage layout may change in future versions.
 
 **scholar-rag-mcp** is a publishable academic-paper knowledge-base MCP tool. Point it at a
 folder of PDFs and it ingests each paper through a real parsing pipeline (MinerU), normalizes
@@ -49,7 +49,8 @@ platform on first use.
 ### One-click install / uninstall
 
 ```bash
-uvx scholar-rag-mcp install              # install via uv and register MCP clients
+uvx scholar-rag-mcp install --with-mineru # install via uv, provision managed MinerU, register MCP clients
+uvx scholar-rag-mcp install              # MCP only; bring your own parse service (see PDF parsing)
 scholar-rag-mcp uninstall                # unregister clients and remove the package
 ```
 
@@ -147,6 +148,27 @@ SCHOLAR_RAG_RERANK_MODEL=jina-reranker-v3.5
 
 The embed model dimension is recorded in `kb_meta.json` at kb creation, so changing the
 embedding model later requires a new kb.
+
+## PDF parsing (MinerU)
+
+Since v0.4.0 the default parse backend is `api`. The recommended setup is the
+managed sidecar, which installs MinerU into an isolated Python 3.12 venv
+(MinerU requires Python >=3.10,<3.14) and auto-starts `mineru-api` on first
+parse:
+
+```bash
+scholar-rag-mcp install --with-mineru
+```
+
+The first parse triggers MinerU's model download; set
+`MINERU_MODEL_SOURCE=modelscope` if you need a China-friendly mirror.
+
+Self-managed alternative: install MinerU in any Python 3.12 environment, run
+`mineru-api --host 127.0.0.1 --port 8010`, and keep the defaults
+(`SCHOLAR_RAG_MINERU_BACKEND=api`, `SCHOLAR_RAG_MINERU_API_URL=http://127.0.0.1:8010`).
+
+The `python` backend (in-process import) and `cli` backend (subprocess per
+file) remain available via `SCHOLAR_RAG_MINERU_BACKEND`.
 
 ## MCP client setup
 
@@ -270,6 +292,7 @@ python tests/perf/bench_query.py                          # query latency benchm
 ## Release notes
 
 For known limitations and upgrade guidance see
+`docs/handoffs/release-notes-v0.4.0.md`,
 `docs/handoffs/release-notes-v0.3.0.md` and
 `docs/handoffs/release-notes-v0.2.1.md`.
 

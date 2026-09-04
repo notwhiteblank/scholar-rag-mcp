@@ -42,12 +42,17 @@ ROOT_KEYS: dict[str, str] = {
 
 ENTRY_NAME = "scholar-rag-mcp"
 
+MINERU_PIN = "mineru[core]==3.4.5"
+MINERU_PYTHON = "3.12"
+MINERU_API_URL_DEFAULT = "http://127.0.0.1:8010"
+
 USAGE = (
     "usage: scholar-rag-mcp [command] [options]\n"
     "\n"
     "commands:\n"
     "  (none)     launch the MCP stdio server\n"
     "  install    install the package and register configured MCP clients\n"
+    "             (--with-mineru also installs a managed MinerU sidecar)\n"
     "  uninstall  unregister configured MCP clients and remove the package\n"
 )
 
@@ -238,6 +243,58 @@ def manual_snippet(client: str, endpoints: dict[str, str]) -> str:
     return _dump_json({ROOT_KEYS[client]: {ENTRY_NAME: build_entry(client, endpoints)}})
 
 
+def merge_local_config(config_path: Path, updates: dict[str, object]) -> None:
+    data: dict[str, object] = {}
+    if config_path.is_file():
+        try:
+            loaded = json.loads(config_path.read_text(encoding="utf-8"))
+        except json.JSONDecodeError as exc:
+            raise SetupError(f"cannot parse {config_path}: {exc}") from exc
+        if not isinstance(loaded, dict):
+            raise SetupError(f"{config_path} must contain a JSON object")
+        data = loaded
+    data.update(updates)
+    config_path.parent.mkdir(parents=True, exist_ok=True)
+    config_path.write_text(_dump_json(data), encoding="utf-8")
+
+
+def install_mineru_sidecar(
+    data_dir: Path,
+    api_url: str,
+    run: Callable[..., Any] = subprocess.run,
+) -> str:
+    env_dir = data_dir / "mineru-env"
+    if sys.platform == "win32":
+        binary = env_dir / "Scripts" / "mineru-api.exe"
+        venv_python = env_dir / "Scripts" / "python.exe"
+    else:
+        binary = env_dir / "bin" / "mineru-api"
+        venv_python = env_dir / "bin" / "python"
+    if binary.is_file():
+        return "already-installed"
+    result = run(
+        ["uv", "venv", str(env_dir), "--python", MINERU_PYTHON],
+        capture_output=True,
+        text=True,
+    )
+    if result.returncode != 0:
+        raise SetupError(f"uv venv failed: {str(result.stderr).strip()}")
+    print(f"installing {MINERU_PIN} into {env_dir} (large download: torch and models deps)")
+    result = run(
+        ["uv", "pip", "install", "--python", str(venv_python), MINERU_PIN],
+        stdout=None,
+        stderr=subprocess.PIPE,
+        text=True,
+    )
+    if result.returncode != 0:
+        raise SetupError(f"uv pip install failed: {str(result.stderr).strip()}")
+    merge_local_config(
+        data_dir / "config.json",
+        {"mineru_backend": "api", "mineru_api_url": api_url, "mineru_managed": True},
+    )
+    return "installed"
+
+
 def run_install(argv: list[str]) -> int:
     parser = argparse.ArgumentParser(
         prog="scholar-rag-mcp install",
@@ -250,6 +307,16 @@ def run_install(argv: list[str]) -> int:
         "--yes",
         action="store_true",
         help="accept the endpoint defaults without prompting",
+    )
+    parser.add_argument(
+        "--with-mineru",
+        action="store_true",
+        help="install a managed MinerU sidecar into an isolated Python 3.12 venv",
+    )
+    parser.add_argument(
+        "--mineru-api-url",
+        default=MINERU_API_URL_DEFAULT,
+        help=f"managed mineru-api URL (default {MINERU_API_URL_DEFAULT})",
     )
     args = parser.parse_args(argv)
     if shutil.which("uv") is None:
@@ -297,8 +364,20 @@ def run_install(argv: list[str]) -> int:
             print(f"{client} config could not be parsed; manual snippet below")
             print(manual_snippet(client, endpoints))
         results[client] = (str(path), status)
+    mineru_status = "skipped"
+    if args.with_mineru:
+        from scholar_rag.core.config import Settings
+
+        try:
+            mineru_status = install_mineru_sidecar(
+                Settings.load().data_dir, args.mineru_api_url
+            )
+        except SetupError as exc:
+            print(exc)
+            return 1
     print("install summary")
     print(f"  package: {pkg_status}")
+    print(f"  mineru sidecar: {mineru_status}")
     for client in clients:
         written_path, status = results[client]
         print(f"  {client}: {written_path} ({status})")
@@ -321,8 +400,16 @@ def run_uninstall(argv: list[str]) -> int:
         help="skip the purge confirmation prompt",
     )
     args = parser.parse_args(argv)
+    from scholar_rag.core.config import Settings
+
+    settings = Settings.load()
+    data_dir = settings.data_dir
     clients = [args.client] if args.client is not None else detect_clients()
     print("uninstall summary")
+    if settings.mineru_managed:
+        from scholar_rag.services.mineru_sidecar import stop_sidecar
+
+        print(f"  mineru sidecar: {stop_sidecar(settings)}")
     for client in clients:
         path = config_path(client)
         status = remove_codex(path) if client == "codex" else remove_json_client(path, client)
@@ -340,9 +427,6 @@ def run_uninstall(argv: list[str]) -> int:
             print("scholar-rag-mcp was likely not installed via uv; skipping")
         else:
             print("  package: removed")
-    from scholar_rag.core.config import Settings
-
-    data_dir = Settings.load().data_dir
     if not args.purge:
         print(f"  data: {data_dir} (kept)")
         return 0

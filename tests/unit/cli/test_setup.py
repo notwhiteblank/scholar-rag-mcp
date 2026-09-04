@@ -6,6 +6,7 @@ from pathlib import Path
 
 import pytest
 
+import scholar_rag.cli.setup as setup
 import scholar_rag.cli.setup as setup_mod
 from scholar_rag.cli.setup import (
     CLIENT_NAMES,
@@ -955,3 +956,138 @@ def test_setup_main_uninstall_dispatch(tmp_path, monkeypatch, capsys):
     assert setup_mod.setup_main(["uninstall", "--yes"]) == 0
     assert "scholar-rag-mcp" not in json.loads(claude.read_text())["mcpServers"]
     assert "claude-code: removed" in capsys.readouterr().out
+
+
+class _RunResult:
+    def __init__(self, returncode=0, stdout="", stderr=""):
+        self.returncode = returncode
+        self.stdout = stdout
+        self.stderr = stderr
+
+
+def test_install_mineru_sidecar_creates_venv_and_config(tmp_path):
+    calls: list[list[str]] = []
+
+    def fake_run(args, **kwargs):
+        calls.append(list(args))
+        if args[:2] == ["uv", "venv"]:
+            scripts = "Scripts" if "win" in sys.platform else "bin"
+            binary = tmp_path / "mineru-env" / scripts / "mineru-api"
+            binary.parent.mkdir(parents=True, exist_ok=True)
+            binary.write_bytes(b"")
+        return _RunResult()
+
+    status = setup.install_mineru_sidecar(
+        tmp_path, "http://127.0.0.1:8010", run=fake_run
+    )
+    assert status == "installed"
+    assert calls[0][:2] == ["uv", "venv"]
+    assert calls[1][:2] == ["uv", "pip"]
+    assert setup.MINERU_PIN in calls[1]
+    config = json.loads((tmp_path / "config.json").read_text(encoding="utf-8"))
+    assert config["mineru_backend"] == "api"
+    assert config["mineru_api_url"] == "http://127.0.0.1:8010"
+    assert config["mineru_managed"] is True
+
+
+def test_install_mineru_sidecar_preserves_existing_config(tmp_path):
+    (tmp_path / "config.json").write_text(
+        json.dumps({"log_level": "DEBUG"}), encoding="utf-8"
+    )
+
+    def fake_run(args, **kwargs):
+        if args[:2] == ["uv", "venv"]:
+            scripts = "Scripts" if "win" in sys.platform else "bin"
+            binary = tmp_path / "mineru-env" / scripts / "mineru-api"
+            binary.parent.mkdir(parents=True, exist_ok=True)
+            binary.write_bytes(b"")
+        return _RunResult()
+
+    setup.install_mineru_sidecar(tmp_path, "http://127.0.0.1:8010", run=fake_run)
+    config = json.loads((tmp_path / "config.json").read_text(encoding="utf-8"))
+    assert config["log_level"] == "DEBUG"
+    assert config["mineru_managed"] is True
+
+
+def test_install_mineru_sidecar_already_installed(tmp_path):
+    scripts = "Scripts" if "win" in sys.platform else "bin"
+    suffix = ".exe" if "win" in sys.platform else ""
+    binary = tmp_path / "mineru-env" / scripts / f"mineru-api{suffix}"
+    binary.parent.mkdir(parents=True, exist_ok=True)
+    binary.write_bytes(b"")
+    status = setup.install_mineru_sidecar(
+        tmp_path, "http://127.0.0.1:8010", run=lambda args, **kwargs: _RunResult()
+    )
+    assert status == "already-installed"
+
+
+def test_install_mineru_sidecar_venv_failure(tmp_path):
+    def fake_run(args, **kwargs):
+        if args[:2] == ["uv", "venv"]:
+            return _RunResult(returncode=1, stderr="no interpreter found")
+        return _RunResult()
+
+    with pytest.raises(setup.SetupError, match="uv venv failed"):
+        setup.install_mineru_sidecar(tmp_path, "http://127.0.0.1:8010", run=fake_run)
+    assert not (tmp_path / "config.json").exists()
+
+
+def test_install_mineru_sidecar_pip_failure(tmp_path):
+    def fake_run(args, **kwargs):
+        if args[:2] == ["uv", "venv"]:
+            scripts = "Scripts" if "win" in sys.platform else "bin"
+            python = tmp_path / "mineru-env" / scripts / "python"
+            python.parent.mkdir(parents=True, exist_ok=True)
+            python.write_bytes(b"")
+            return _RunResult()
+        return _RunResult(returncode=1, stderr="resolution failed")
+
+    with pytest.raises(setup.SetupError, match="uv pip install failed"):
+        setup.install_mineru_sidecar(tmp_path, "http://127.0.0.1:8010", run=fake_run)
+
+
+def test_merge_local_config_parse_failure(tmp_path):
+    bad = tmp_path / "config.json"
+    bad.write_text("{not json", encoding="utf-8")
+    with pytest.raises(setup.SetupError, match="cannot parse"):
+        setup.merge_local_config(bad, {"mineru_managed": True})
+
+
+def test_run_install_with_mineru_flag_exists(capsys):
+    with pytest.raises(SystemExit) as exc:
+        setup.setup_main(["install", "--help"])
+    assert exc.value.code == 0
+    out = capsys.readouterr().out
+    assert "--with-mineru" in out
+    assert "--mineru-api-url" in out
+
+
+def test_run_uninstall_stops_managed_sidecar(tmp_path, monkeypatch, capsys):
+    monkeypatch.setenv("SCHOLAR_RAG_DATA_DIR", str(tmp_path))
+    (tmp_path / "config.json").write_text(
+        json.dumps({"mineru_managed": True, "mineru_backend": "api"}),
+        encoding="utf-8",
+    )
+    stopped: list[object] = []
+    import scholar_rag.services.mineru_sidecar as sidecar
+
+    monkeypatch.setattr(sidecar, "stop_sidecar", lambda settings: stopped.append(settings) or "stopped")
+    monkeypatch.setattr(setup, "detect_clients", lambda: [])
+    monkeypatch.setattr(setup.shutil, "which", lambda name: None)
+    exit_code = setup.run_uninstall([])
+    assert exit_code == 0
+    assert len(stopped) == 1
+    assert "mineru sidecar: stopped" in capsys.readouterr().out
+
+
+def test_run_uninstall_skips_stop_when_not_managed(tmp_path, monkeypatch, capsys):
+    monkeypatch.setenv("SCHOLAR_RAG_DATA_DIR", str(tmp_path))
+    stopped: list[object] = []
+    import scholar_rag.services.mineru_sidecar as sidecar
+
+    monkeypatch.setattr(sidecar, "stop_sidecar", lambda settings: stopped.append(1) or "stopped")
+    monkeypatch.setattr(setup, "detect_clients", lambda: [])
+    monkeypatch.setattr(setup.shutil, "which", lambda name: None)
+    exit_code = setup.run_uninstall([])
+    assert exit_code == 0
+    assert stopped == []

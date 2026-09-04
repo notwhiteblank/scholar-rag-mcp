@@ -31,9 +31,16 @@ def parse(pdf_path: Path) -> str:
             return _parse_via_python(pdf_path)
         if backend == "cli":
             return _parse_via_cli(pdf_path, settings.mineru_bin)
+        _ensure_api_sidecar(settings)
         return _parse_via_api(pdf_path, settings.mineru_api_url)
     except Exception as exc:
         raise PipelineStageError(f"mineru backend={backend} failed: {exc}") from exc
+
+
+def _ensure_api_sidecar(settings: Settings) -> None:
+    from scholar_rag.services.mineru_sidecar import ensure_running
+
+    ensure_running(settings)
 
 
 def _parse_via_python(pdf_path: Path) -> str:

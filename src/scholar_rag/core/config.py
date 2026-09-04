@@ -54,9 +54,10 @@ class Settings(BaseSettings):
     rerank_base_url: str = ""
     rerank_api_key: str = ""
     rerank_model: str = "jina-reranker-v3.5"
-    mineru_backend: str = "python"
+    mineru_backend: str = "api"
     mineru_api_url: str = "http://127.0.0.1:8010"
     mineru_bin: str = "mineru"
+    mineru_managed: bool = False
     keywords_enabled: bool = True
     annotation_resolver_enabled: bool = True
     job_workers: int = 1

@@ -19,12 +19,15 @@ import tempfile
 from pathlib import Path
 
 try:
+    import httpx
+
     from pydantic import ValidationError
     from scholar_rag.core.config import Settings
     from scholar_rag.core.errors import ConfigError
     from scholar_rag.models import get_chat_client, get_embedding_client, get_rerank_client
     from scholar_rag.store.qdrant_platform import QDRANT_VERSION, detect_asset
 except ImportError:
+    httpx = None  # type: ignore[assignment]
     Settings = None  # type: ignore[assignment]
     ConfigError = Exception  # type: ignore[assignment]
     ValidationError = Exception  # type: ignore[assignment]
@@ -131,19 +134,29 @@ def _mineru_report(report: _Report, settings: Settings) -> None:
             report.add(False, label, f"{binary} returned {completed.returncode}")
         return
     api_url = settings.mineru_api_url
-    import httpx
+    if settings.mineru_managed:
+        from scholar_rag.services.mineru_sidecar import managed_api_binary
+
+        binary = managed_api_binary(settings)
+        if binary.is_file():
+            report.add(True, "mineru (managed env)", f"{binary} present")
+        else:
+            report.add(False, "mineru (managed env)",
+                       f"{binary} missing; run: scholar-rag-mcp install --with-mineru")
     try:
-        response = httpx.get(f"{api_url}/", timeout=10)
+        response = httpx.get(f"{api_url}/health", timeout=10)
         reachable = response.status_code < 500
-    except httpx.HTTPError as exc:
+    except httpx.HTTPError:
         reachable = False
-        note = f"{api_url} unreachable ({exc}); start mineru-api or fix SCHOLAR_RAG_MINERU_API_URL"
-    else:
-        note = f"{api_url} responded HTTP {response.status_code}"
-    if not reachable:
-        report.add(False, label, note)
-    else:
-        report.add(True, label, note)
+    if reachable:
+        report.add(True, "mineru (api)", f"{api_url} responded on /health")
+        return
+    if settings.mineru_managed:
+        report.add(True, "mineru (api)",
+                   f"{api_url} not running yet; managed sidecar will auto-start on first parse")
+        return
+    report.add(False, "mineru (api)",
+               f"{api_url} unreachable; start mineru-api or fix SCHOLAR_RAG_MINERU_API_URL")
 
 
 def _qdrant_report(report: _Report, settings: Settings) -> None:

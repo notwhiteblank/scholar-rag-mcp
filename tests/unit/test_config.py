@@ -57,9 +57,10 @@ DEFAULTS: list[tuple[str, Callable[[], object]]] = [
     ("rerank_base_url", lambda: ""),
     ("rerank_api_key", lambda: ""),
     ("rerank_model", lambda: "jina-reranker-v3.5"),
-    ("mineru_backend", lambda: "python"),
+    ("mineru_backend", lambda: "api"),
     ("mineru_api_url", lambda: "http://127.0.0.1:8010"),
     ("mineru_bin", lambda: "mineru"),
+    ("mineru_managed", lambda: False),
     ("keywords_enabled", lambda: True),
     ("annotation_resolver_enabled", lambda: True),
     ("job_workers", lambda: 1),
@@ -181,3 +182,33 @@ def test_invalid_backend_in_config_json_raises_config_error():
     write_config(_expected_default_data_dir(), {"RERANK_BACKEND": "bogus"})
     with pytest.raises(ConfigError):
         Settings.load()
+
+
+def test_mineru_backend_default_is_api():
+    assert Settings().mineru_backend == "api"
+
+
+def test_mineru_managed_default_false():
+    assert Settings().mineru_managed is False
+
+
+def test_mineru_managed_from_env(tmp_path, monkeypatch):
+    monkeypatch.setenv("SCHOLAR_RAG_DATA_DIR", str(tmp_path))
+    monkeypatch.setenv("SCHOLAR_RAG_MINERU_MANAGED", "true")
+    assert Settings.load().mineru_managed is True
+
+
+def test_mineru_managed_from_config_file(tmp_path, monkeypatch):
+    monkeypatch.setenv("SCHOLAR_RAG_DATA_DIR", str(tmp_path))
+    (tmp_path / "config.json").write_text(
+        json.dumps({"mineru_managed": True, "mineru_backend": "api"}), encoding="utf-8"
+    )
+    settings = Settings.load()
+    assert settings.mineru_managed is True
+    assert settings.mineru_backend == "api"
+
+
+def test_mineru_backend_python_still_allowed(tmp_path, monkeypatch):
+    monkeypatch.setenv("SCHOLAR_RAG_DATA_DIR", str(tmp_path))
+    monkeypatch.setenv("SCHOLAR_RAG_MINERU_BACKEND", "python")
+    assert Settings.load().mineru_backend == "python"
