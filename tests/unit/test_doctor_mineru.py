@@ -25,8 +25,16 @@ def test_doctor_managed_env_missing_reports_failure(tmp_path):
     assert (False, "mineru (managed env)") in labels
 
 
+def _managed_binary(tmp_path):
+    import sys as _sys
+
+    if _sys.platform == "win32":
+        return tmp_path / "mineru-env" / "Scripts" / "mineru-api.exe"
+    return tmp_path / "mineru-env" / "bin" / "mineru-api"
+
+
 def test_doctor_managed_env_present_reports_pass(tmp_path):
-    binary = tmp_path / "mineru-env" / "bin" / "mineru-api"
+    binary = _managed_binary(tmp_path)
     binary.parent.mkdir(parents=True)
     binary.write_bytes(b"")
     report = doctor._Report()
@@ -36,7 +44,7 @@ def test_doctor_managed_env_present_reports_pass(tmp_path):
 
 
 def test_doctor_managed_unreachable_is_not_failure(tmp_path, monkeypatch):
-    binary = tmp_path / "mineru-env" / "bin" / "mineru-api"
+    binary = _managed_binary(tmp_path)
     binary.parent.mkdir(parents=True)
     binary.write_bytes(b"")
     import httpx

@@ -971,7 +971,7 @@ def test_install_mineru_sidecar_creates_venv_and_config(tmp_path):
     def fake_run(args, **kwargs):
         calls.append(list(args))
         if args[:2] == ["uv", "venv"]:
-            scripts = "Scripts" if "win" in sys.platform else "bin"
+            scripts = "Scripts" if sys.platform == "win32" else "bin"
             binary = tmp_path / "mineru-env" / scripts / "mineru-api"
             binary.parent.mkdir(parents=True, exist_ok=True)
             binary.write_bytes(b"")
@@ -997,7 +997,7 @@ def test_install_mineru_sidecar_preserves_existing_config(tmp_path):
 
     def fake_run(args, **kwargs):
         if args[:2] == ["uv", "venv"]:
-            scripts = "Scripts" if "win" in sys.platform else "bin"
+            scripts = "Scripts" if sys.platform == "win32" else "bin"
             binary = tmp_path / "mineru-env" / scripts / "mineru-api"
             binary.parent.mkdir(parents=True, exist_ok=True)
             binary.write_bytes(b"")
@@ -1010,8 +1010,8 @@ def test_install_mineru_sidecar_preserves_existing_config(tmp_path):
 
 
 def test_install_mineru_sidecar_already_installed(tmp_path):
-    scripts = "Scripts" if "win" in sys.platform else "bin"
-    suffix = ".exe" if "win" in sys.platform else ""
+    scripts = "Scripts" if sys.platform == "win32" else "bin"
+    suffix = ".exe" if sys.platform == "win32" else ""
     binary = tmp_path / "mineru-env" / scripts / f"mineru-api{suffix}"
     binary.parent.mkdir(parents=True, exist_ok=True)
     binary.write_bytes(b"")
@@ -1035,7 +1035,7 @@ def test_install_mineru_sidecar_venv_failure(tmp_path):
 def test_install_mineru_sidecar_pip_failure(tmp_path):
     def fake_run(args, **kwargs):
         if args[:2] == ["uv", "venv"]:
-            scripts = "Scripts" if "win" in sys.platform else "bin"
+            scripts = "Scripts" if sys.platform == "win32" else "bin"
             python = tmp_path / "mineru-env" / scripts / "python"
             python.parent.mkdir(parents=True, exist_ok=True)
             python.write_bytes(b"")
